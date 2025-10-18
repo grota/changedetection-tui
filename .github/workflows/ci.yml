@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+  workflow_dispatch:
+
+# Ensure only one CI run per ref is active at a time.
+# This cancels older in-progress runs on the same branch/PR
+# when new commits arrive, saving CI resources.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    # Keep the job name stable so it can be set as a required check.
+    name: tests
+    runs-on: ubuntu-latest
+    # avoid running on merge commits on main (it would be duplicate work, already done in PR)
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Merge')
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies (dev)
+        run: uv sync --dev --frozen
+
+      - name: Run pre-commit
+        if: hashFiles('.pre-commit-config.yaml') != ''
+        run: |
+          # `--all-files` ensures the whole repo is checked on CI.
+          # `--show-diff-on-failure` surfaces diffs in CI logs.
+          uv run pre-commit run --all-files --show-diff-on-failure
+
+        # PR-only: Validate conventional commits with fallback to PR title check
+      - name: Check commits (conventional)
+        if: github.event_name == 'pull_request'
+        id: check_commits
+        continue-on-error: true
+        run: |
+          echo "Checking all commits in PR for conventional commit format..."
+          uv run cz check --rev-range origin/main..
+
+      - name: Check PR title (fallback)
+        if: github.event_name == 'pull_request' && steps.check_commits.outcome == 'failure'
+        run: |
+          echo "Commit check failed. Validating PR title as fallback..."
+          echo "PR title: ${{ github.event.pull_request.title }}"
+          echo "${{ github.event.pull_request.title }}" | uv run cz check --commit-msg-file /dev/stdin
+
+      - name: Test with coverage
+        run: |
+          uv run coverage run -m pytest -q
+          uv run coverage report -m
+          uv run coverage xml -o coverage.xml
+
+      # - name: Upload coverage artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-xml
+      #     path: coverage.xml
+      #     if-no-files-found: warn

@@ -1,0 +1,12 @@
+# https://github.com/dgtlmoon/changedetection.io/blob/master/docker-compose.yml
+
+services:
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io
+    container_name: changedetection
+    ports:
+      - 127.0.0.1:5000:5000
+    hostname: changedetection
+    restart: unless-stopped
+    volumes:
+      - ./datastore:/datastore
