@@ -1,0 +1,74 @@
+[project]
+name = "changedetection-tui"
+version = "0.0.4"
+description = "TUI client for changedetection.io"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Giuseppe Rota", email = "403432+grota@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.2.1",
+    "httpx>=0.28.1",
+    "icdiff>=2.0.7",
+    "pathvalidate>=3.3.1",
+    "pydantic>=2.11.7",
+    "pydantic-settings[yaml]>=2.11.0",
+    "textual>=5.3.0",
+    "xdg-base-dirs>=6.0.2",
+]
+keywords = ['console', 'tui', 'textual', 'changedetection', 'change', 'detection']
+classifiers = [
+  "Environment :: Console",
+  'Intended Audience :: Developers',
+  "Intended Audience :: System Administrators",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Development Status :: 4 - Beta",
+]
+
+[project.urls]
+Homepage = "https://github.com/grota/changedetection-tui"
+Documentation = "https://github.com/grota/changedetection-tui"
+Repository = "https://github.com/grota/changedetection-tui"
+Issues = "https://github.com/grota/changedetection-tui/issues"
+
+[project.scripts]
+cdtui = "changedetection_tui.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.9.1",
+    "coverage>=7.11.0",
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.1",
+    "textual-dev>=1.7.0",
+    "wat>=0.7.0",
+]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = 'tests'
+addopts = [
+    "--import-mode=importlib",
+]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "semver2"
+version_provider = "uv"
+update_changelog_on_bump = true
+major_version_zero = true

@@ -1,0 +1,118 @@
+# Release workflow
+
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target PyPI repository'
+        required: true
+        default: 'pypi'
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target) || 'pypi' }}
+
+jobs:
+  build-publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+      url: ${{ env.TARGET == 'pypi' && 'https://pypi.org/p/changedetection-tui' || 'https://test.pypi.org/p/changedetection-tui' }}
+
+    # Permissions rationale:
+    # - id-token: write — required for OIDC-based Trusted Publisher.
+    # - contents: write — to create a GitHub Release with notes.
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies (no dev)
+        run: uv sync --frozen
+
+      - name: Build artifacts (sdist + wheel)
+        run: uv build
+
+      - name: Publish to PyPI (Trusted Publisher)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ env.TARGET == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
+          verbose: true
+
+      - name: Create GitHub Release (auto notes)
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
+  # ---------------------------------------------------------------------------
+  # Stub for future container publishing to GHCR.
+  # Enable when you have a Dockerfile and want to push images.
+  #
+  # To enable:
+  # - Remove the `if: ${{ false }}` gate below
+  # - Add a Dockerfile at the repo root (or adjust context/Dockerfile path)
+  # - Consider versioning tags (e.g., `ghcr.io/<owner>/<name>:latest` and `:vX.Y.Z`)
+  # - Ensure this repo has `packages: write` permission in the job
+  # - Optionally add buildx and caching for faster rebuilds
+  # ---------------------------------------------------------------------------
+  container-ghcr-stub:
+    name: GHCR container (stub)
+    if: ${{ false }}  # TODO: flip to true once containerization is ready
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to push to ghcr.io
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Example skeleton using official Docker actions:
+      # - name: Set up QEMU (for multi-arch, optional)
+      #   uses: docker/setup-qemu-action@v3
+      #
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
+      #
+      # - name: Log in to GHCR
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #
+      # - name: Build and push image
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: |
+      #       ghcr.io/${{ github.repository_owner }}/changedetection-tui:latest
+      #       ghcr.io/${{ github.repository_owner }}/changedetection-tui:${{ github.ref_name }}
+      #     # Optionally, enable cache for faster rebuilds:
+      #     # cache-from: type=gha
+      #     # cache-to: type=gha,mode=max
+      #
+      # - name: Post-publish info
+      #   run: echo "Container published to GHCR (stub example)."

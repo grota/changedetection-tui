@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Ensure only one CI run per ref is active at a time.
+# This cancels older in-progress runs on the same branch/PR
+# when new commits arrive, saving CI resources.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    # Keep the job name stable so it can be set as a required check.
+    name: tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies (dev)
+        run: uv sync --dev --frozen
+
+      # Optionally run pre-commit if configured.
+      # We use `uvx` to run the tool without modifying pyproject/lock.
+      # The step is conditional and will be skipped if there is no config.
+      - name: Run pre-commit (if configured)
+        if: hashFiles('.pre-commit-config.yaml') != ''
+        run: |
+          # `--all-files` ensures the whole repo is checked on CI.
+          # `--show-diff-on-failure` surfaces diffs in CI logs.
+          uvx pre-commit run --all-files --show-diff-on-failure
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Test with coverage
+        run: |
+          uv run coverage run -m pytest -q
+          uv run coverage report -m
+          uv run coverage xml -o coverage.xml
+
+      # - name: Upload coverage artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-xml
+      #     path: coverage.xml
+      #     if-no-files-found: warn
