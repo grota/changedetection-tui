@@ -4,8 +4,10 @@
 </div>
 
 <div align="center">
-  
-[![PyPI version](https://badge.fury.io/py/changedetection-tui.svg)](https://badge.fury.io/py/changedetection-tui)
+
+![GitHub Release](https://img.shields.io/github/v/release/grota/changedetection-tui?style=flat&logo=github&labelColor=black&color=369eff)
+![PyPI - Version](https://img.shields.io/pypi/v/changedetection-tui)
+[![CI](https://github.com/grota/changedetection-tui/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/grota/changedetection-tui/actions/workflows/ci.yml)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
