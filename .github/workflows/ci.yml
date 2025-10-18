@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
   workflow_dispatch:
@@ -46,6 +47,22 @@ jobs:
           # `--all-files` ensures the whole repo is checked on CI.
           # `--show-diff-on-failure` surfaces diffs in CI logs.
           uvx pre-commit run --all-files --show-diff-on-failure
+
+      # PR-only: Validate conventional commits with fallback to PR title check
+      - name: Check commits (conventional)
+        if: github.event_name == 'pull_request'
+        id: check_commits
+        continue-on-error: true
+        run: |
+          echo "Checking all commits in PR for conventional commit format..."
+          uv run cz check --use-default-range
+
+      - name: Check PR title (fallback)
+        if: github.event_name == 'pull_request' && steps.check_commits.outcome == 'failure'
+        run: |
+          echo "Commit check failed. Validating PR title as fallback..."
+          echo "PR title: ${{ github.event.pull_request.title }}"
+          echo "${{ github.event.pull_request.title }}" | uv run cz check --commit-msg-file /dev/stdin
 
       - name: Ruff lint
         run: uv run ruff check .

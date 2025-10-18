@@ -4,7 +4,11 @@ name: Release
 
 on:
   push:
-    tags: [ "v*" ]
+    tags:
+      # Trigger on semver2 tags (without "v" prefix): 0.0.5, 1.2.3, etc.
+      - "[0-9]+.[0-9]+.[0-9]+"
+      # Also support pre-release versions: 1.0.0-alpha.1, 1.0.0-rc.2, etc.
+      - "[0-9]+.[0-9]+.[0-9]+-*"
   workflow_dispatch:
     inputs:
       target:
@@ -53,16 +57,37 @@ jobs:
       - name: Build artifacts (sdist + wheel)
         run: uv build
 
+      - name: Extract changelog for this release
+        run: |
+          # Get current version from tag (e.g., "0.0.5")
+          CURRENT_VERSION="${GITHUB_REF_NAME}"
+          echo "Extracting changelog for version: ${CURRENT_VERSION}"
+
+          # Extract the section for current version from CHANGELOG.md
+          # This gets everything from "## VERSION" until the next "## " or EOF
+          awk "/^## ${CURRENT_VERSION}/{flag=1; next} /^## /{flag=0} flag" CHANGELOG.md > release_notes.md
+
+          # Fail if no content was extracted
+          if [ ! -s release_notes.md ]; then
+            echo "ERROR: No changelog content found for version ${CURRENT_VERSION} in CHANGELOG.md"
+            echo "Make sure CHANGELOG.md has a section starting with: ## ${CURRENT_VERSION}"
+            exit 1
+          fi
+
+          echo "Release notes content:"
+          cat release_notes.md
+
+      - name: Create GitHub Release with changelog
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+
       - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@release/v1
+        if: ${{ github.event_name == 'push' }}
         with:
           repository-url: ${{ env.TARGET == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
           verbose: true
-
-      - name: Create GitHub Release (auto notes)
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
 
   # ---------------------------------------------------------------------------
   # Stub for future container publishing to GHCR.
