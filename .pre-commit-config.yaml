@@ -1,7 +1,32 @@
 ---
 repos:
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.9.1
+  - repo: local
     hooks:
-      - id: commitizen
-        stages: [commit-msg]
+      # like https://github.com/astral-sh/ruff-pre-commit/blob/main/.pre-commit-hooks.yaml but using locally installed ruff.
+      - id: uv-ruff-check
+        entry: uv run ruff check --force-exclude
+        stages:
+          - pre-commit
+        name: uv-ruff-check
+        language: system
+        require_serial: true
+        types_or: [python, pyi, jupyter]
+
+      # like https://github.com/astral-sh/ruff-pre-commit/blob/main/.pre-commit-hooks.yaml but using locally installed ruff.
+      - id: uv-ruff-format
+        entry: uv run ruff format --force-exclude --exit-non-zero-on-format
+        stages:
+          - pre-commit
+        name: uv-ruff-format
+        language: system
+        require_serial: true
+        types_or: [python, pyi, jupyter]
+
+      # Like https://github.com/commitizen-tools/commitizen/blob/master/.pre-commit-hooks.yaml but using locally installed commitizen.
+      - id: commitizen-githook-commit-msg
+        name: commitizen-githook-commit-msg
+        language: system
+        entry: uv run cz check
+        args: [--allow-abort, --commit-msg-file]
+        stages:
+          - commit-msg
