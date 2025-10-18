@@ -32,7 +32,7 @@ jobs:
     name: Build and publish to PyPI
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.target }}
+      name: ${{ inputs.target || 'pypi' }}
       url: ${{ env.TARGET == 'pypi' && 'https://pypi.org/p/changedetection-tui' || 'https://test.pypi.org/p/changedetection-tui' }}
 
     # Permissions rationale:
@@ -76,17 +76,17 @@ jobs:
           echo "Release notes content:"
           cat release_notes.md
 
-      - name: Create GitHub Release with changelog
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: release_notes.md
-
       - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@release/v1
         if: ${{ github.event_name == 'push' }}
         with:
           repository-url: ${{ env.TARGET == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
           verbose: true
+
+      - name: Create GitHub Release with changelog
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
 
   # ---------------------------------------------------------------------------
   # Stub for future container publishing to GHCR.
