@@ -1,3 +1,13 @@
+## 0.1.0 (2025-10-19)
+
+### Feat
+
+- python compat >= 3.10
+
+### Fix
+
+- fix uvx instructions in readme [ci skip]
+
 ## 0.0.3 (2025-10-18)
 
 ### Fix
