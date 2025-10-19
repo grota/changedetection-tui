@@ -1,4 +1,9 @@
-from typing import Any, Literal, final, overload, override
+from typing import Any, Literal, final, overload
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 from pydantic import ValidationError
 from textual import on
 from textual.app import ComposeResult

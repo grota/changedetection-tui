@@ -1,6 +1,11 @@
 from dataclasses import dataclass
-import enum
-from typing import cast, final, override
+from enum import IntEnum, Enum, auto
+from typing import cast, final
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 from textual import on, work
 from textual.containers import Grid, HorizontalGroup, VerticalGroup
 from textual.message import Message
@@ -16,15 +21,15 @@ from changedetection_tui.utils import make_api_request
 
 @dataclass()
 class Ordering:
-    class OrderBy(enum.IntEnum):
-        LAST_CHANGED = enum.auto()
-        LAST_CHECKED = enum.auto()
+    class OrderBy(IntEnum):
+        LAST_CHANGED = auto()
+        LAST_CHECKED = auto()
 
     order_by: OrderBy
 
-    class OrderDirection(enum.StrEnum):
-        ASC = enum.auto()
-        DESC = enum.auto()
+    class OrderDirection(Enum):
+        ASC = auto()
+        DESC = auto()
 
     order_direction: OrderDirection
 

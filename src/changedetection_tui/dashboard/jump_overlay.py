@@ -1,4 +1,9 @@
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 from textual import events
 from textual.app import ComposeResult
 from textual.binding import Binding

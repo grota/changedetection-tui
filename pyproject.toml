@@ -7,7 +7,7 @@ license = "MIT"
 authors = [
     { name = "Giuseppe Rota", email = "403432+grota@users.noreply.github.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "click>=8.2.1",
     "httpx>=0.28.1",
@@ -16,6 +16,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pydantic-settings[yaml]>=2.11.0",
     "textual>=5.3.0",
+    "typing-extensions>=4.15.0",
     "xdg-base-dirs>=6.0.2",
 ]
 keywords = ['console', 'tui', 'textual', 'changedetection', 'change', 'detection']
@@ -25,6 +26,9 @@ classifiers = [
   "Intended Audience :: System Administrators",
   "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Development Status :: 4 - Beta",
 ]
@@ -47,6 +51,7 @@ dev = [
     "commitizen>=4.9.1",
     "coverage>=7.11.0",
     "pre-commit>=4.3.0",
+    "pylint>=4.0.1",
     "pytest>=8.4.2",
     "ruff>=0.13.1",
     "textual-dev>=1.7.0",

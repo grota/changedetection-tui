@@ -1,5 +1,25 @@
-from itertools import batched, islice
-from typing import Callable, cast, final, override
+from itertools import islice
+
+try:
+    from itertools import batched
+except ImportError:
+
+    def batched(iterable, n: int, strict=False):
+        if n < 1:
+            raise ValueError("n must be at least one")
+        iterator = iter(iterable)
+        while batch := tuple(islice(iterator, n)):
+            if strict and len(batch) != n:
+                raise ValueError("batched(): incomplete batch")
+            yield batch
+
+
+from typing import Callable, cast, final
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import VerticalScroll

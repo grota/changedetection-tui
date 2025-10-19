@@ -1,5 +1,10 @@
 from pathlib import Path
-from typing import final, override
+from typing import final
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
