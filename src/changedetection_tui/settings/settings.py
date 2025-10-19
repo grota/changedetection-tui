@@ -1,5 +1,10 @@
 from contextvars import ContextVar
-from typing import Annotated, Any, Callable, override
+from typing import Annotated, Any, Callable
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 from pydantic import (
     BaseModel,
     BeforeValidator,

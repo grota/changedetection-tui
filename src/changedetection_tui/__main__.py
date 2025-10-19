@@ -1,5 +1,9 @@
 import os
-from typing import override
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 import click
 from urllib.parse import urlparse
 from pydantic import ValidationError
@@ -102,8 +106,11 @@ def make_settings(ctx: click.Context, **kwargs: str) -> Settings:
         if not missing_props:
             raise
 
-        message = f"{get_url_and_apikey_help().replace('\b\n', '').removeprefix('\n')}"
-        message += f"\nSee '{click.style(ctx.command_path + ' ' + ctx.help_option_names[0], fg='bright_blue')}' for more help.\n\n"
+        message = get_url_and_apikey_help().replace("\b\n", "").removeprefix("\n")
+        more_help = click.style(
+            ctx.command_path + " " + ctx.help_option_names[0], fg="bright_blue"
+        )
+        message += f"\nSee '{more_help}' for more help.\n\n"
         message += (
             f"Missing: {', '.join(click.style(x, fg='red') for x in missing_props)}"
         )

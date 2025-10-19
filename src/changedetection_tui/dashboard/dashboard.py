@@ -1,4 +1,9 @@
-from typing import TYPE_CHECKING, cast, final, override
+from typing import TYPE_CHECKING, cast, final
+
+try:
+    from typing import override
+except ImportError:
+    from typing_extensions import override
 from textual.app import ComposeResult
 from textual.reactive import var
 from textual.widget import Widget
