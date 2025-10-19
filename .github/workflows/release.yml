@@ -4,6 +4,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       # Trigger on semver2 tags (without "v" prefix): 0.0.5, 1.2.3, etc.
       - "[0-9]+.[0-9]+.[0-9]+"
@@ -11,132 +13,39 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+-*"
   workflow_dispatch:
     inputs:
-      target:
+      pypitarget:
         description: 'Target PyPI repository'
         required: true
-        default: 'pypi'
+        default: 'none'
         type: choice
         options:
+          - none
           - testpypi
           - pypi
+      push_docker_latest:
+        description: 'Build and push Docker latest tag'
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  TARGET: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target) || 'pypi' }}
+  PYPITARGET: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.pypitarget) || 'pypi' }}
 
 jobs:
-  build-publish:
-    name: Build and publish to PyPI
-    runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.target || 'pypi' }}
-      url: ${{ env.TARGET == 'pypi' && 'https://pypi.org/p/changedetection-tui' || 'https://test.pypi.org/p/changedetection-tui' }}
-
-    # Permissions rationale:
-    # - id-token: write — required for OIDC-based Trusted Publisher.
-    # - contents: write — to create a GitHub Release with notes.
-    permissions:
-      id-token: write
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-
-      - name: Sync dependencies (no dev)
-        run: uv sync --frozen
-
-      - name: Build artifacts (sdist + wheel)
-        run: uv build
-
-      - name: Extract changelog for this release
-        run: |
-          CURRENT_VERSION=$(uv version --short)
-          echo "Extracting changelog for version: ${CURRENT_VERSION}"
-
-          # Extract the section for current version from CHANGELOG.md
-          # This gets everything from "## VERSION" until the next "## " or EOF
-          awk "/^## ${CURRENT_VERSION}/{flag=1; next} /^## /{flag=0} flag" CHANGELOG.md > release_notes.md
-
-          # Fail if no content was extracted
-          if [ ! -s release_notes.md ]; then
-            echo "ERROR: No changelog content found for version ${CURRENT_VERSION} in CHANGELOG.md"
-            echo "Make sure CHANGELOG.md has a section starting with: ## ${CURRENT_VERSION}"
-            exit 1
-          fi
-
-          echo "Release notes content:"
-          cat release_notes.md
-
-      - name: Publish to PyPI (Trusted Publisher)
-        uses: pypa/gh-action-pypi-publish@release/v1
-        if: ${{ github.event_name == 'push' }}
-        with:
-          repository-url: ${{ env.TARGET == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
-          verbose: true
-
-      - name: Create GitHub Release with changelog
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: release_notes.md
-
-  # ---------------------------------------------------------------------------
-  # Stub for future container publishing to GHCR.
-  # Enable when you have a Dockerfile and want to push images.
-  #
-  # To enable:
-  # - Remove the `if: ${{ false }}` gate below
-  # - Add a Dockerfile at the repo root (or adjust context/Dockerfile path)
-  # - Consider versioning tags (e.g., `ghcr.io/<owner>/<name>:latest` and `:vX.Y.Z`)
-  # - Ensure this repo has `packages: write` permission in the job
-  # - Optionally add buildx and caching for faster rebuilds
-  # ---------------------------------------------------------------------------
-  container-ghcr-stub:
-    name: GHCR container (stub)
-    if: ${{ false }}  # TODO: flip to true once containerization is ready
-    runs-on: ubuntu-latest
-    permissions:
-      # Required to push to ghcr.io
-      packages: write
-      contents: read
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # Example skeleton using official Docker actions:
-      # - name: Set up QEMU (for multi-arch, optional)
-      #   uses: docker/setup-qemu-action@v3
-      #
-      # - name: Set up Docker Buildx
-      #   uses: docker/setup-buildx-action@v3
-      #
-      # - name: Log in to GHCR
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ghcr.io
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      #
-      # - name: Build and push image
-      #   uses: docker/build-push-action@v6
-      #   with:
-      #     context: .
-      #     push: true
-      #     tags: |
-      #       ghcr.io/${{ github.repository_owner }}/changedetection-tui:latest
-      #       ghcr.io/${{ github.repository_owner }}/changedetection-tui:${{ github.ref_name }}
-      #     # Optionally, enable cache for faster rebuilds:
-      #     # cache-from: type=gha
-      #     # cache-to: type=gha,mode=max
-      #
-      # - name: Post-publish info
-      #   run: echo "Container published to GHCR (stub example)."
+  pypi-and-gh-release:
+    uses: ./.github/workflows/pypi-and-gh-release.yml
+    with:
+      pypitarget: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pypitarget || 'pypi' }}
+    # on tag push + manual with a test or prod pypi env.
+    if: (github.event_name == 'push' && github.ref_type == 'tag') || (github.event_name == 'workflow_dispatch' && github.event.inputs.pypitarget != 'none')
+  docker:
+    uses: ./.github/workflows/docker.yml
+    with:
+      latest_only: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.push_docker_latest == 'true' }}
+    secrets:
+      DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+    if: (github.event_name == 'push' && github.ref_type == 'tag') || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_docker_latest == 'true')
