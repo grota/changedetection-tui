@@ -48,13 +48,15 @@ A terminal user interface (TUI) client for the opensource [changedetection.io](h
 ### Using uv (recommended)
 
 ```bash
-uvx changedetection-tui
+uvx --from changedetection-tui cdtui
 ```
 
 Or install as a tool:
 
 ```bash
 uv tool install changedetection-tui
+# $PATH must contain `uv tool dir`
+cdtui
 ```
 
 ### Using pip
