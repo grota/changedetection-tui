@@ -33,13 +33,10 @@ jobs:
           enable-cache: true
 
       - name: Sync dependencies (no dev)
-        run: uv sync --frozen
+        run: uv sync --locked
 
       - name: Build artifacts (sdist + wheel)
         run: uv build
-
-      - name: test
-        run: echo "${{ inputs.pypitarget == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}"
 
       - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@release/v1

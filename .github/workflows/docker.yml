@@ -24,8 +24,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      # let's try using the git build context (no checkout).
 
       - name: Retrieve Repository Docker metadata
         id: docker_meta
@@ -65,11 +64,10 @@ jobs:
         with:
           version: latest
 
-      # - name: Build and push images
-      #   uses: docker/build-push-action@v6
-      #   with:
-      #     context: .
-      #     push: true
-      #     platforms: linux/amd64,linux/arm64
-      #     tags: ${{ steps.docker_meta.outputs.tags }}
-      #     labels: ${{ steps.docker_meta.outputs.labels }}
+      - name: Build and push images
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}

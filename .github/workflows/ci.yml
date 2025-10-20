@@ -40,7 +40,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies (dev)
-        run: uv sync --dev --frozen
+        run: uv sync --dev --locked
 
       - name: Run pre-commit
         if: hashFiles('.pre-commit-config.yaml') != ''

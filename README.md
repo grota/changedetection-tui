@@ -1,5 +1,4 @@
 <div align="center">
-
   <h1>Changedetection TUI</h1>
 </div>
 
@@ -11,7 +10,6 @@
 [![CI](https://github.com/grota/changedetection-tui/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/grota/changedetection-tui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-
 
 </div>
 
@@ -78,15 +76,15 @@ pip install changedetection-tui
 cdtui --url http://your-changedetection-url-here --api-key your-api-key-here
 ```
 
-### 📖 Other ways to specify URL and api-key
+### 📖 Other ways to specify URL and API key
 
 <img width="754" height="448" alt="cdtui_help" src="https://github.com/user-attachments/assets/ae485b6b-c472-496a-99a8-cc700f7f2f81" />
 
-The URL and the API key values found can also be persisted to the config file after launch via settings, here's a screenshot of the main section.
+The URL and the API key values found can also be persisted to the configuration file after launch via settings, here's a screenshot of the main section.
 
 <img width="1110" height="469" alt="Main settings" src="https://github.com/user-attachments/assets/30ebf7fe-3633-451a-9794-af73b2dc4a95" />
 
-Where you can see that you can avoid storing the api key secret to the config file by using the environment variable syntax.
+Where you can see that you can avoid storing the API key secret to the configuration file by using the environment variable syntax.
 
 ## 👨‍💻 Development
 

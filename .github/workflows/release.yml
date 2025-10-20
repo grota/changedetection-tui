@@ -53,4 +53,5 @@ jobs:
       latest_only: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.push_docker_latest == 'true' }}
     secrets:
       DOCKER_PAT: ${{ secrets.DOCKER_PAT }}
+    # on tag push + manual with checkbox "push latest" on.
     if: (github.event_name == 'push' && github.ref_type == 'tag') || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_docker_latest == 'true')
