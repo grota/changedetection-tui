@@ -4,11 +4,17 @@
 
 <div align="center">
 
-![GitHub Release](https://img.shields.io/github/v/release/grota/changedetection-tui?style=flat&logo=github&labelColor=black&color=369eff)
-![PyPI - Version](https://img.shields.io/pypi/v/changedetection-tui)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/changedetection-tui)](https://pypi.org/project/changedetection-tui)
+[![PyPI - Version](https://img.shields.io/pypi/v/changedetection-tui?style=for-the-badge&logo=pypi&logoColor=green)](https://pypi.org/project/changedetection-tui/)
+[![Docker Image Version](https://img.shields.io/docker/v/grota/changedetection-tui?style=for-the-badge&logo=docker&label=docker&color=blue)](hub.docker.com/r/grota/changedetection-tui)
+[![GitHub Release](https://img.shields.io/github/v/release/grota/changedetection-tui?style=for-the-badge&logo=github&labelColor=black&color=slategray)](https://github.com/grota/changedetection-tui/releases)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/changedetection-tui?style=for-the-badge&logo=python)](https://pypi.org/project/changedetection-tui)
+
+</div>
+
+<div align="center">
+
 [![CI](https://github.com/grota/changedetection-tui/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/grota/changedetection-tui/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?logo=leanpub)](https://opensource.org/licenses/MIT)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 </div>
