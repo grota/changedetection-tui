@@ -65,8 +65,23 @@ pip install changedetection-tui
 
 ### Using docker
 
-> [!WARNING]
-> Not implemented yet.
+Images are pushed both on the official [docker hub](https://hub.docker.com/r/grota/changedetection-tui)
+and on Github's [container registry](https://github.com/grota/changedetection-tui/pkgs/container/changedetection-tui).
+The images are the same, use whatever you want.
+
+```bash
+docker run --rm -it grota/changedetection-tui
+# or
+docker run --rm -it ghcr.io/grota/changedetection-tui
+```
+
+### Pushed tags
+
+These are the docker image tags we push to both registries:
+
+- The major-only semver tag (e.g. `grota/changedetection-tui:1`)
+- The full semver tags (e.g. `grota/changedetection-tui:1.2.3`)
+- The _latest_ tag: which corresponds to the last commit on the default branch (_main_)
 
 ## ⚡️ Usage
 
