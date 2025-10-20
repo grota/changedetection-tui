@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.pypitarget || 'pypi' }}
-      url: ${{ inputs.pypitarget == 'pypi' && 'https://pypi.org/p/changedetection-tui' || 'https://test.pypi.org/p/changedetection-tui' }}
+      url: ${{ inputs.pypitarget == 'testpypi' && 'https://test.pypi.org/p/changedetection-tui' || 'https://pypi.org/p/changedetection-tui' }}
 
     permissions:
       # - id-token: write — required for OIDC-based Trusted Publisher.
@@ -50,7 +50,7 @@ jobs:
       - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: ${{ inputs.pypitarget == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
+          repository-url: ${{ inputs.pypitarget == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
           verbose: true
 
       - name: Extract changelog for this release
