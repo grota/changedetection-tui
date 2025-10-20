@@ -28,12 +28,12 @@ ENV PYTHONUNBUFFERED=1
 RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=${NEW_UID},gid=${NEW_GID} \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project --no-editable
+    uv sync --locked --no-install-project --no-editable --no-group dev
 
 # Copy project and install it into the venv
 COPY --chown=${NEW_UID}:${NEW_GID} . /app
 RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=${NEW_UID},gid=${NEW_GID} \
-    uv sync --locked --no-editable
+    uv sync --locked --no-editable --no-group dev
 
 FROM python:${PYTHON_VER} AS final
 
