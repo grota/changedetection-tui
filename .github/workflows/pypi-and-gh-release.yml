@@ -80,7 +80,7 @@ jobs:
           body_path: release_notes.md
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: pypi-and-gh-release-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

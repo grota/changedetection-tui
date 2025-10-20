@@ -16,15 +16,6 @@ on:
 env:
   DOCKER_IMAGE: ${{ github.repository }}
 
-permissions:
-  contents: write
-  id-token: write
-  packages: write
-
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-docker-images:
     runs-on: ubuntu-latest
@@ -90,3 +81,12 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+concurrency:
+  group: docker-release-${{ github.ref }}
+  cancel-in-progress: true
