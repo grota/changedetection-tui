@@ -1,3 +1,14 @@
+## 0.2.0 (2025-10-20)
+
+### Feat
+
+- docker initial support
+
+### Fix
+
+- prune deps
+- try fix ci
+
 ## 0.1.0 (2025-10-19)
 
 ### Feat
