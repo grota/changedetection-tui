@@ -1,3 +1,9 @@
+## 0.2.1 (2025-10-20)
+
+### Fix
+
+- pypi action does not support reusable workflows
+
 ## 0.2.0 (2025-10-20)
 
 ### Feat

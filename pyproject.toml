@@ -1,6 +1,6 @@
 [project]
 name = "changedetection-tui"
-version = "0.2.0"
+version = "0.2.1"
 description = "TUI client for changedetection.io"
 readme = "README.md"
 license = "MIT"
