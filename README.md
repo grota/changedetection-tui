@@ -28,6 +28,11 @@ A terminal user interface (TUI) client for the opensource [changedetection.io](h
 
 <img width="1718" height="1020" alt="Real-time dashboard view of your monitored URLs" src="https://github.com/user-attachments/assets/9f78eb27-a6bb-454c-9733-26a0bbd98c97" />
 
+### Jump mode
+
+<img width="1526" height="1014" alt="cdtui_jump_mode" src="https://github.com/user-attachments/assets/1ecdbee0-1f99-440f-ba5d-2ee8f3bd357a" />
+
+
 ### Settings (keybindings)
 
 <img width="1104" height="1291" alt="cdtui_keybindings" src="https://github.com/user-attachments/assets/e6c29806-8fd1-473c-8e32-cc308449a850" />
@@ -106,6 +111,25 @@ The URL and the API key values found can also be persisted to the configuration 
 <img width="1110" height="469" alt="Main settings" src="https://github.com/user-attachments/assets/30ebf7fe-3633-451a-9794-af73b2dc4a95" />
 
 Where you can see that you can avoid storing the API key secret to the configuration file by using the environment variable syntax.
+
+### Keybindings
+
+Current keybindings can be seen in the footer, they can be remapped in settings.
+
+- Open Jump Mode: ctrl+j
+- Quit: ctrl+c
+- Open settings; ctrl+o
+- Focus next: tab
+- Focus previous: shift+tab
+- Open palette: ctrl+p
+- Move left/down/up/right: hjkl
+- Dismiss jump mode: esc/ctrl+c
+
+## Roadmap
+
+- [ ] improve docker documentation usage
+- [ ] implement compact view mode
+- [ ] custom diff views
 
 ## 👨‍💻 Development
 
