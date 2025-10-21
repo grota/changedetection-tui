@@ -1,4 +1,7 @@
 from typing import cast
+import sys
+import shutil
+import subprocess
 from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Grid, VerticalGroup
@@ -6,7 +9,8 @@ from textual.screen import ModalScreen
 from textual.types import NoSelection
 from textual.widgets import Button, Label, Select
 from tempfile import TemporaryDirectory
-from os import system, path
+from os import path
+import shlex
 
 from textual.worker import Worker, WorkerState
 from changedetection_tui.types import ApiListWatch, ApiWatch
@@ -26,6 +30,7 @@ class DiffPanelScreen(ModalScreen):
     def __init__(self, *args, uuid: str, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.uuid = uuid
+        self.api_watch: ApiWatch
 
     def compose(self) -> ComposeResult:
         with Grid(id="dialog"):
@@ -84,10 +89,17 @@ class DiffPanelScreen(ModalScreen):
                 to_file.write(to_data)
 
             with self.app.suspend():
-                system(
-                    f"icdiff --report-identical-files '{from_filepath}' '{to_filepath}' -U 10 --show-no-spaces| less --RAW-CONTROL-CHARS -+S --wordwrap"
-                )
-        self.app.pop_screen()
+                template = "{ICDIFF} --report-identical-files --unified=10 --show-no-spaces {FILE_FROM} {FILE_TO} | less --RAW-CONTROL-CHARS -+S --wordwrap"
+                tokens = {
+                    "{ICDIFF}": self._get_path_for("icdiff"),
+                    "{FILE_FROM}": shlex.quote(from_filepath),
+                    "{FILE_TO}": shlex.quote(to_filepath),
+                }
+                cmd = template
+                for token, value in tokens.items():
+                    cmd = cmd.replace(token, value)
+                _ = subprocess.run(cmd, shell=True, check=True)
+        _ = self.app.pop_screen()
 
     @work(exclusive=True)
     async def load_data(self, uuid: str) -> tuple[list[int], int, ApiWatch]:
@@ -136,6 +148,26 @@ class DiffPanelScreen(ModalScreen):
         select_to.value = snapshot_timestamps[0]
 
         self.api_watch = worker.result[2]
+
+    def _get_path_for(self, cmd: str) -> str:
+        """Get the path to the cmd in the current Python environment."""
+        cmd_path = shutil.which(cmd)
+        if cmd_path:
+            return cmd_path
+
+        # Fallback: try to find it in the same directory as the Python executable
+        python_dir = path.dirname(sys.executable)
+        fallback_path = path.join(python_dir, cmd)
+        if path.exists(fallback_path):
+            return fallback_path
+
+        # Another fallback: try common bin directories
+        for bin_dir in ["bin", "Scripts"]:
+            fallback_path = path.join(path.dirname(python_dir), bin_dir, cmd)
+            if path.exists(fallback_path):
+                return fallback_path
+
+        raise RuntimeError(f"{cmd} binary not found.")
 
     def _filename_for_diff(self, watch: ApiListWatch, timestamp: int) -> str:
         return sanitize_filename(
