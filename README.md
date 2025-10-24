@@ -127,8 +127,8 @@ Current keybindings can be seen in the footer, they can be remapped in settings.
 
 ## Roadmap
 
+- [x] implement compact view mode
 - [ ] improve docker documentation usage
-- [ ] implement compact view mode
 - [ ] custom diff views
 
 ## 👨‍💻 Development
@@ -148,8 +148,13 @@ cd changedetection-tui
 # Install dependencies
 uv sync --dev
 
-# Run in development mode
+# Run from venv
 uv run cdtui
+
+# Run in development mode
+uv run textual console -x SYSTEM  -x WORKER -x DEBUG -x EVENT
+# Run connecting to textual's console
+uv run textual run --dev .venv/bin/cdtui
 ```
 
 ### Development Tools

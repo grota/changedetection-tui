@@ -11,7 +11,7 @@ assigned_jump_keys: set[str] = set()
 
 
 def _get_next_jump_key() -> str | None:
-    for char in "abcdefghijklmnopqrstuvwxyz":
+    for char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ":
         if char not in assigned_jump_keys:
             assigned_jump_keys.add(char)
             return char

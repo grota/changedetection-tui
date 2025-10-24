@@ -63,7 +63,7 @@ class Dashboard(Widget):
         input = self.query_exactly_one("#search-input")
         if TYPE_CHECKING:
             input = cast(Input, input)
-        self.search_watches(
+        _ = self.search_watches(
             search_term=input.value,
             tag_title=event.tag_title if event.tag_title != Select.BLANK else None,
         )
@@ -75,7 +75,7 @@ class Dashboard(Widget):
         selected_tag = self.query_exactly_one("#select-tags")
         if TYPE_CHECKING:
             selected_tag = cast(Select[str], selected_tag)
-        self.search_watches(
+        _ = self.search_watches(
             search_term=event.search_term,
             tag_title=selected_tag.value
             if selected_tag.value != Select.BLANK
@@ -143,8 +143,6 @@ class Dashboard(Widget):
             return
         if worker.state != WorkerState.SUCCESS:
             return
-        # settings = SETTINGS.get()
-        # self.app.title += f"🔌 to {settings.url}"
         api_list_of_watches = worker.result
         if not isinstance(api_list_of_watches, ApiListWatches):
             raise ValueError(

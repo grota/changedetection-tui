@@ -26,7 +26,7 @@ from textual.containers import VerticalScroll
 from textual.events import Resize
 from textual.message import Message
 from changedetection_tui.dashboard.header import Ordering
-from changedetection_tui.settings import default_keymap
+from changedetection_tui.settings import SETTINGS, default_keymap
 from changedetection_tui.types import ApiListWatch, ApiListWatches
 from changedetection_tui.dashboard.watchrow import WatchRow
 from textual.reactive import reactive
@@ -141,7 +141,8 @@ class WatchListWidget(VerticalScroll):
 
     def on_resize(self, event: Resize) -> None:
         # This magic number is the height of a single WatchRow.
-        self.rows_per_page_from_resize = event.size.height // 5
+        single_watchrow_height = SETTINGS.get().compact_mode and 3 or 5
+        self.rows_per_page_from_resize = event.size.height // single_watchrow_height
         if self.rows_per_page == 0:
             _ = self.refresh(recompose=True)
 

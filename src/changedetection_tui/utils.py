@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import httpx
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, Literal
 from collections.abc import Mapping
 from textual.app import App
 from textual.binding import Binding
@@ -10,7 +10,9 @@ import functools
 import operator
 
 
-def format_timestamp(timestamp: int) -> str:
+def format_timestamp(
+    timestamp: int, format_type: Literal["relative", "absolute", "both"] = "both"
+) -> str:
     """Format timestamp as human readable date and relative time"""
     if timestamp == 0:
         return "Never"
@@ -43,7 +45,12 @@ def format_timestamp(timestamp: int) -> str:
         months = seconds // 2592000
         relative = f"{months} month{'s' if months != 1 else ''} ago"
 
-    return f"{relative}\n({absolute})"
+    if format_type == "relative":
+        return relative
+    elif format_type == "absolute":
+        return absolute
+    else:  # both
+        return f"{relative}\n({absolute})"
 
 
 def get_best_snapshot_ts_based_on_last_viewed(
