@@ -5,8 +5,14 @@ from textual.containers import HorizontalGroup, ItemGrid, VerticalGroup
 from textual.events import Click
 from textual.reactive import reactive
 from textual.widgets import Static
+from changedetection_tui.settings.settings import SETTINGS
 from changedetection_tui.types import ApiListWatch
-from typing import cast
+from typing import final
+
+try:
+    from typing import override, cast
+except ImportError:
+    from typing_extensions import override, cast
 from changedetection_tui.dashboard.buttons import (
     RecheckButton,
     SwitchViewedStateButton,
@@ -16,11 +22,12 @@ from changedetection_tui.dashboard.buttons import (
 from changedetection_tui.utils import format_timestamp
 
 
+@final
 class WatchRow(HorizontalGroup):
     """A row in the main watch list widget"""
 
     api_list_watch: reactive[ApiListWatch] = reactive(
-        cast(ApiListWatch, None), recompose=True
+        cast(ApiListWatch, cast(object, None)), recompose=True
     )
 
     def __init__(self, *args, uuid: str, watch: ApiListWatch, **kwargs) -> None:
@@ -29,9 +36,11 @@ class WatchRow(HorizontalGroup):
         self.set_reactive(WatchRow.api_list_watch, watch)
         self.uuid = uuid
         if self.api_list_watch.viewed:
-            self.add_class("viewed")
+            _ = self.add_class("viewed")
 
+    @override
     def compose(self) -> ComposeResult:
+        settings = SETTINGS.get()
         watch = self.api_list_watch
         viewed = watch.viewed
         title = watch.title_or_url()
@@ -46,18 +55,26 @@ class WatchRow(HorizontalGroup):
             yield Static(f"{errors}", classes="error-from-cd")
         # Second column
         yield Static(
-            f"{format_timestamp(watch.last_changed)}", classes="timestamp col-2"
+            format_timestamp(
+                watch.last_changed,
+                format_type=(settings.compact_mode and "absolute" or "both"),
+            ),
+            classes="timestamp col-2",
         )
         # Third column
         yield Static(
-            f"{format_timestamp(watch.last_checked)}", classes="timestamp col-3"
+            format_timestamp(
+                watch.last_checked,
+                format_type=(settings.compact_mode and "absolute" or "both"),
+            ),
+            classes="timestamp col-3",
         )
         # Fourth column: Action buttons
         # ItemGrid is undocumented, the min_column_width value has been found
         # via trial and error and I guess it will be an unstable api.
         with ItemGrid(classes="watch-actions col-4", min_column_width=5):
             flat = False
-            compact = False
+            compact = settings.compact_mode
             yield RecheckButton(
                 "🔄 Recheck",
                 id="recheck",

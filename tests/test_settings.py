@@ -121,6 +121,7 @@ def test_settings_with_no_yaml(setup_config):
     assert settings.model_dump() == {
         "url": FAKE_URL,
         "api_key": FAKE_APIKEY,
+        "compact_mode": True,
         "keybindings": copy.deepcopy(DEFAULT_KEYBINDINGS),
     }, "With no file it still needs to be able to access defaults"
     assert not settings.keybindings.non_default_actions

@@ -6,7 +6,7 @@
 - **Run application**: `uv run cdtui http://localhost:5000 a9fa87b8421663bd958d3a34a705e049`
 - **Development run**: `textual run --dev .venv/bin/cdtui http://localhost:5000 a9fa87b8421663bd958d3a34a705e049`
 - **Lint**: `uv run ruff check .` (if ruff configured)
-- **Type check**: `uv run mypy .` (if mypy configured)
+- **Type check**: `uv run basedpyright`
 
 ## Fetch of external references and guides
 

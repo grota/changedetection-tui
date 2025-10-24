@@ -53,7 +53,7 @@ class TuiApp(App[None], inherit_bindings=False):
     @on(ComposeIsDone)
     def start_fetching_watches(self) -> None:
         self.notify("Connecting to changedetection...")
-        self.query_exactly_one(Dashboard).search_watches()
+        _ = self.query_exactly_one(Dashboard).search_watches()
 
     @on(SettingsScreen.SettingsChanged)
     def set_new_settings(self, event: SettingsScreen.SettingsChanged) -> None:
@@ -63,7 +63,7 @@ class TuiApp(App[None], inherit_bindings=False):
         os.chmod(conf_file_path, 0o0600)
         _ = SETTINGS.set(event.new_settings)
         self.set_keymap(keymap=construct_keymap(event.new_settings))
-        self.call_after_refresh(lambda: self.refresh(recompose=True))
+        _ = self.call_after_refresh(lambda: self.refresh(recompose=True))
 
     MODES = {
         "dashboard": MainScreen,

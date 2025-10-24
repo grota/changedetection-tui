@@ -13,7 +13,16 @@ from textual.message import Message
 from textual.screen import ModalScreen
 from textual.containers import Grid, HorizontalGroup, VerticalScroll
 from textual.validation import Failure, ValidationResult, Validator
-from textual.widgets import Footer, Label, Input, Button, Static, TabPane, TabbedContent
+from textual.widgets import (
+    Checkbox,
+    Footer,
+    Label,
+    Input,
+    Button,
+    Static,
+    TabPane,
+    TabbedContent,
+)
 
 from changedetection_tui.settings.kb_report import KeyBindingsReport
 from changedetection_tui.settings.locations import config_file
@@ -238,6 +247,14 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
                             "(In the API Key field you can use the $ENV_VAR syntax to avoid storing the secret value to the config file)",
                             classes="required-field-description",
                         )
+                        yield Label(
+                            Settings.model_fields["compact_mode"].metadata[0]["help"]
+                            or "No Label"
+                        )
+                        yield Checkbox(
+                            value=self.settings.compact_mode,
+                            id="checkbox-for-compact_mode",
+                        )
                 with TabPane("Keybindings", id="tabpane-keybindings"):
                     with Grid(id="keybindings-settings-grid"):
                         for context_name, fieldinfo in type(
@@ -342,6 +359,11 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
         if not isinstance(input_for_apikey, Input):
             raise ValueError(f"Expected Input, got {type(input_for_apikey)}")
         form_apikey = input_for_apikey.value
+        checkbox_for_compact_mode = self.screen.query_exactly_one(
+            "#checkbox-for-compact_mode"
+        )
+        if not isinstance(checkbox_for_compact_mode, Checkbox):
+            raise ValueError(f"Expected Checkbox, got {type(input_for_url)}")
 
         kbs_payload: dict[str, dict[str, dict[str, str]]] = {}
         for namespaced_action, input in self.kb_inputs.items():
@@ -358,6 +380,7 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
         settings_from_form = Settings(
             url=form_url,
             api_key=form_apikey,
+            compact_mode=checkbox_for_compact_mode.value,
             keybindings=KeyBindingSettings(**kbs_payload),  # pyright: ignore[reportArgumentType]
         )
         return settings_from_form

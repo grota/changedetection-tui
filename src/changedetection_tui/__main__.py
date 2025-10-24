@@ -1,9 +1,9 @@
 import os
 
 try:
-    from typing import override
+    from typing import override, cast
 except ImportError:
-    from typing_extensions import override
+    from typing_extensions import override, cast
 import click
 from urllib.parse import urlparse
 from pydantic import ValidationError
@@ -35,14 +35,21 @@ short_description = f"A {click.style('TUI', bold=True)} client for " + click.sty
 
 
 def get_url_and_apikey_help() -> str:
+    url_metadata = cast(
+        dict[str, str | tuple[str, str]], Settings.model_fields["url"].metadata[0]
+    )
+    api_key_metadata = cast(
+        dict[str, str | tuple[str, str]], Settings.model_fields["api_key"].metadata[0]
+    )
+
     return f"""
 \b
 {click.style("URL", italic=True)} and {click.style("API key", italic=True)} are both {click.style("required", fg="yellow", bold=True)} to operate.
 This list is searched in order until a value is found:
 
 \b
-- Command line switches. ({", ".join(Settings.model_fields["url"].metadata[0]["click_args"])}) / ({", ".join(Settings.model_fields["api_key"].metadata[0]["click_args"])})
-- Environment variables. ({Settings.model_fields["url"].metadata[0]["envvar"]} / {Settings.model_fields["api_key"].metadata[0]["envvar"]})
+- Command line switches. ({", ".join(cast(tuple[str, str], url_metadata["click_args"]))}) / ({", ".join(cast(tuple[str, str], api_key_metadata["click_args"]))})
+- Environment variables. ({cast(str, url_metadata["envvar"])} / {cast(str, api_key_metadata["envvar"])})
 - Configuration file. ({click.style(locations.config_file(), fg="green")})
 - Interactive prompt.
 """
@@ -62,18 +69,18 @@ def get_help() -> str:
 )
 @click.pass_context
 @click.option(
-    *Settings.model_fields["url"].metadata[0]["click_args"],
+    *cast(tuple[str, str], Settings.model_fields["url"].metadata[0]["click_args"]),
     type=URL(),
     show_envvar=True,
-    envvar=Settings.model_fields["url"].metadata[0]["envvar"],
-    help=Settings.model_fields["url"].metadata[0]["help"],
+    envvar=cast(str, Settings.model_fields["url"].metadata[0]["envvar"]),
+    help=cast(str, Settings.model_fields["url"].metadata[0]["help"]),
 )
 @click.option(
-    *Settings.model_fields["api_key"].metadata[0]["click_args"],
+    *cast(tuple[str, str], Settings.model_fields["api_key"].metadata[0]["click_args"]),
     type=str,
     show_envvar=True,
-    envvar=Settings.model_fields["api_key"].metadata[0]["envvar"],
-    help=Settings.model_fields["api_key"].metadata[0]["help"],
+    envvar=cast(str, Settings.model_fields["api_key"].metadata[0]["envvar"]),
+    help=cast(str, Settings.model_fields["api_key"].metadata[0]["help"]),
 )
 @click.version_option()
 def cli(ctx: click.Context, **kwargs: str) -> None:
@@ -93,8 +100,11 @@ def cli(ctx: click.Context, **kwargs: str) -> None:
 
 
 def make_settings(ctx: click.Context, **kwargs: str) -> Settings:
-    allowed = set(Settings.model_fields.keys())
-    filtered = {key: value for key, value in kwargs.items() if key in allowed and value}
+    filtered = {
+        key: value
+        for key, value in kwargs.items()
+        if key in {"url", "api_key"} and value
+    }
     try:
         return Settings(**filtered)  # pyright: ignore [reportArgumentType]
     except ValidationError as e:

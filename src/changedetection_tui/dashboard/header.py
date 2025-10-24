@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from enum import IntEnum, Enum, auto
 from typing import cast, final
 
+from textual.app import ComposeResult
+from textual.color import Color
+
 try:
     from typing import override
 except ImportError:
@@ -17,6 +20,7 @@ from textual.worker import WorkerFailed
 
 from changedetection_tui.types import ApiListTags
 from changedetection_tui.utils import make_api_request
+from changedetection_tui.settings import SETTINGS
 
 
 @dataclass()
@@ -68,26 +72,63 @@ class WatchListHeader(Widget):
             self.search_term = search_term
 
     @override
-    def compose(self):
-        with HorizontalGroup(classes="table-filters-and-ordering"):
-            with HorizontalGroup(name="filters_group", classes="filters_group"):
+    def compose(self) -> ComposeResult:
+        settings = SETTINGS.get()
+        table_filters_and_ordering = HorizontalGroup(
+            classes="table-filters-and-ordering"
+        )
+        table_filters_and_ordering.styles.margin = (
+            settings.compact_mode and (0, 0, 0, 0) or (0, 0, 1, 0)
+        )
+        with table_filters_and_ordering:
+            filters_group = HorizontalGroup(
+                name="filters_group", classes="filters_group"
+            )
+            filters_group.styles.border = (
+                settings.compact_mode
+                and ("none", "transparent")
+                or ("solid", Color.parse(self.app.theme_variables["accent-darken-3"]))
+            )
+            with filters_group:
                 with VerticalGroup(
                     name="filter_group_only_to_be_viewed",
-                    classes="filter_group_only_to_be_viewed",
+                    classes="filter_group_only_to_be_viewed with-horizontal-margin",
                 ):
-                    yield Label("Show Only items:", variant="secondary")
+                    yield Label("Show Only items:")
                     yield Checkbox(
-                        "To be viewed", value=self.only_unviewed, id="only-unviewed"
+                        "To be viewed",
+                        value=self.only_unviewed,
+                        id="only-unviewed",
+                        compact=settings.compact_mode,
                     )
-                with VerticalGroup(name="tags_group", classes="tags_group"):
-                    yield Label("Tags:", variant="secondary")
-                    yield Select([], id="select-tags", prompt="No tag selected")
-                with VerticalGroup(name="search_group", classes="search_group"):
-                    yield Label("Search for:", variant="secondary")
-                    yield Input(id="search-input", tooltip="Enter to submit")
-            with Grid(name="ordering_group", classes="ordering_group"):
+                with VerticalGroup(
+                    name="tags_group", classes="tags_group with-horizontal-margin"
+                ):
+                    yield Label("Tags:")
+                    yield Select(
+                        [],
+                        id="select-tags",
+                        prompt="No tag selected",
+                        compact=settings.compact_mode,
+                    )
+                with VerticalGroup(
+                    name="search_group", classes="search_group with-horizontal-margin"
+                ):
+                    yield Label("Search for:")
+                    yield Input(
+                        id="search-input",
+                        tooltip="Enter to submit",
+                        compact=settings.compact_mode,
+                    )
+            ordering_group = Grid(name="ordering_group", classes="ordering_group")
+            ordering_group.styles.border = (
+                settings.compact_mode
+                and ("none", "transparent")
+                or ("solid", Color.parse(self.app.theme_variables["accent-darken-3"]))
+            )
+            with ordering_group:
                 with VerticalGroup(id="order-by", classes="ordering"):
-                    yield Label("Order by:", variant="secondary")
+                    yield Label("Order by:")
                     yield Select(
                         [
                             ("Last Changed", Ordering.OrderBy.LAST_CHANGED),
@@ -96,9 +137,10 @@ class WatchListHeader(Widget):
                         allow_blank=False,
                         value=self.ordering.order_by,
                         id="ordering-by-select",
+                        compact=settings.compact_mode,
                     )
                 with VerticalGroup(id="order-direction", classes="ordering"):
-                    yield Label("Direction:", variant="secondary")
+                    yield Label("Direction:")
                     yield Select(
                         [
                             ("Desc", Ordering.OrderDirection.DESC),
@@ -107,6 +149,7 @@ class WatchListHeader(Widget):
                         allow_blank=False,
                         value=self.ordering.order_direction,
                         id="ordering-direction-select",
+                        compact=settings.compact_mode,
                     )
         with HorizontalGroup(classes="table-header"):
             yield Static("[bold]Title[/]", classes="col-1")
@@ -128,6 +171,7 @@ class WatchListHeader(Widget):
         select_tags.set_options(
             [(tag.title, tag.title) for tag in api_list_of_tags.root.values()]
         )
+        _ = self.query_exactly_one("#only-unviewed").focus()
 
     # exit_on_error=False to be able to catch exception in caller.
     @work(exclusive=True, exit_on_error=False)

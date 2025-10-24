@@ -250,6 +250,12 @@ class Settings(BaseSettings):
             "help": "The changedetection API key",
         },
     ]
+    compact_mode: Annotated[
+        bool,
+        {
+            "help": "Display in compact mode",
+        },
+    ] = True
     keybindings: KeyBindingSettings = Field(default_factory=KeyBindingSettings)
 
     @classmethod
