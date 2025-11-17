@@ -26,11 +26,22 @@ A terminal user interface (TUI) client for the opensource [changedetection.io](h
 
 ### Main view
 
+![main_view](https://github.com/user-attachments/assets/3449a9f2-1af4-4b7e-ae3c-f8802694e4d3)
+
+
+<details>
+<summary>Non compact view</summary>
 <img width="1718" height="1020" alt="Real-time dashboard view of your monitored URLs" src="https://github.com/user-attachments/assets/9f78eb27-a6bb-454c-9733-26a0bbd98c97" />
+</details>
 
 ### Jump mode
 
+![jump_mode_compact](https://github.com/user-attachments/assets/920848b8-ee2f-4034-b63d-934617d05754)
+
+<details>
+<summary>Non compact view</summary>
 <img width="1526" height="1014" alt="cdtui_jump_mode" src="https://github.com/user-attachments/assets/1ecdbee0-1f99-440f-ba5d-2ee8f3bd357a" />
+</details>
 
 
 ### Settings (keybindings)
@@ -130,7 +141,8 @@ Current keybindings can be seen in the footer, they can be remapped in settings.
 ## Roadmap
 
 - [x] implement compact view mode
-- [ ] improve docker documentation usage
+- [x] improve docker documentation usage
+- [ ] create video demo
 - [ ] custom diff views
 
 ## 👨‍💻 Development
