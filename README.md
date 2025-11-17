@@ -81,9 +81,11 @@ and on Github's [container registry](https://github.com/grota/changedetection-tu
 The images are the same, use whatever you want.
 
 ```bash
-docker run --rm -it grota/changedetection-tui
+mkdir ~/.config/cdtui/
+
+docker run --rm -it -v ~/.config/cdtui/:/home/appuser/.config/cdtui/ -u $(id -u):$(id -g) grota/changedetection-tui
 # or
-docker run --rm -it ghcr.io/grota/changedetection-tui
+docker run --rm -it -v ~/.config/cdtui/:/home/appuser/.config/cdtui/ -u $(id -u):$(id -g) ghcr.io/grota/changedetection-tui
 ```
 
 ### Pushed tags
@@ -190,9 +192,10 @@ src/changedetection_tui/
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
+## 🔗 Links and acknowledgements
 
 - [changedetection.io](https://github.com/dgtlmoon/changedetection.io)
 - [Textual Framework](https://textual.textualize.io/)
 - [GitHub Repository](https://github.com/grota/changedetection-tui)
 - [Issue Tracker](https://github.com/grota/changedetection-tui/issues)
+- [posting](https://github.com/darrenburns/posting) for showing me how to use `textual`
