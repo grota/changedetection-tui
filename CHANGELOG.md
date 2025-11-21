@@ -1,3 +1,9 @@
+## 1.1.0 (2025-11-21)
+
+### Feat
+
+- Added caching for http calls, fixed main list update when updaing single row watch
+
 ## 1.0.0 (2025-11-17)
 
 ### Feat
