@@ -1,3 +1,9 @@
+## 1.1.1 (2025-11-21)
+
+### Fix
+
+- Bumped patch to re-release on correct branch/tag
+
 ## 1.1.0 (2025-11-21)
 
 ### Feat
