@@ -142,8 +142,8 @@ Current keybindings can be seen in the footer, they can be remapped in settings.
 
 - [x] implement compact view mode
 - [x] improve docker documentation usage
-- [ ] create video demo
-- [ ] custom diff views
+- [ ] create video demo?
+- [ ] custom diff views?
 
 ## 👨‍💻 Development
 

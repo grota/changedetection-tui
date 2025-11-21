@@ -5,9 +5,57 @@ from typing import TYPE_CHECKING, Any, cast, Literal
 from collections.abc import Mapping
 from textual.app import App
 from textual.binding import Binding
+from cachetools import TTLCache
 from changedetection_tui.settings import SETTINGS, Settings, default_keymap
 import functools
 import operator
+
+# Cache configuration
+_watchlist_cache = TTLCache[str, httpx.Response](maxsize=100, ttl=600)  # 10 minutes
+_history_cache = TTLCache[str, httpx.Response](maxsize=100, ttl=1200)  # 20 minutes
+_tags_cache = TTLCache[str, httpx.Response](maxsize=100, ttl=2400)  # 40 minutes
+
+
+def _get_cache_key(
+    route: str, method: str, params: dict[str, str] | None = None
+) -> str:
+    """Generate cache key based on hostname, route, method, and parameters."""
+    settings = SETTINGS.get()
+    cache_key = f"{method}:{settings.url}:{route}"
+    if params:
+        cache_key += f":{hash(frozenset(params.items()))}"
+    return cache_key
+
+
+def _get_ttl_cache(
+    route: str, method: str, params: dict[str, str] | None
+) -> TTLCache[str, httpx.Response] | None:
+    """Determine if response should be cached and return appropriate cache."""
+    if method != "GET":
+        return None
+    # A GET api with side effects, yeah, I know...
+    if params and params.get("recheck", None):
+        return None
+
+    # Watch list and search endpoints (but not individual watch details)
+    if route == "/api/v1/watch" or route == "/api/v1/search":
+        return _watchlist_cache
+
+    # Tags endpoint
+    if route == "/api/v1/tags":
+        return _tags_cache
+
+    # Watch history endpoints
+    if route.endswith("/history"):
+        return _history_cache
+
+    # Individual watch details and other endpoints - no caching
+    return None
+
+
+def invalidate_watchlist_cache() -> None:
+    """Clear watchlist cache after write operations."""
+    _watchlist_cache.clear()
 
 
 def format_timestamp(
@@ -84,7 +132,7 @@ def get_best_snapshot_ts_based_on_last_viewed(
 
 async def make_api_request(
     app: App[None],
-    url: str,
+    route: str,
     method: str = "GET",
     params: dict[str, str] | None = None,
     data: Mapping[str, Any] | None = None,
@@ -94,7 +142,18 @@ async def make_api_request(
         from changedetection_tui.app import TuiApp
 
         app = cast(TuiApp, app)
+
     settings = SETTINGS.get()
+
+    cache = _get_ttl_cache(route, method, params)
+    # Just: "if cache"" is not enough, the obj behaves like a {} at the beginning.
+    if cache is not None:
+        # Check cache first for GET requests
+        cache_key = _get_cache_key(route, method, params)
+        app.log.info(f"{cache_key}")
+        if cache_key in cache:
+            app.log.info(f"Serving from cache key {cache_key}")
+            return cache[cache_key]
 
     api_key = (
         (os.getenv(settings.api_key[1:]) or "")
@@ -103,7 +162,7 @@ async def make_api_request(
     )
     async with httpx.AsyncClient() as client:
         request = httpx.Request(
-            url=settings.url + url,
+            url=settings.url + route,
             method=method,
             params=params,
             data=data,
@@ -129,6 +188,13 @@ async def make_api_request(
                 severity="error",
             )
             raise
+
+        # Store response in cache if applicable
+        if cache is not None:
+            cache_key = _get_cache_key(route, method, params)
+            app.log.info(f"Storing to cache key {cache_key}")
+            cache[cache_key] = res
+
         return res
 
 

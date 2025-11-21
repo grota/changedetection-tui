@@ -102,16 +102,18 @@ class Dashboard(Widget):
     ) -> ApiListWatches:
         params = {}
         if search_term:
-            url = "/api/v1/search"
+            route = "/api/v1/search"
             params = {"q": search_term, "partial": "true"}
             if tag_title:
                 params["tag"] = tag_title
         else:
             params = {"tag": tag_title} if tag_title else None
-            url = "/api/v1/watch"
+            route = "/api/v1/watch"
 
         try:
-            response = (await make_api_request(self.app, url=url, params=params)).json()
+            response = (
+                await make_api_request(self.app, route=route, params=params)
+            ).json()
         except httpx.HTTPError as exc:
             r = exc.request
             message = f"Error connecting to {r.url}"

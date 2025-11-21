@@ -1,4 +1,6 @@
 from itertools import islice
+from textual import on
+from changedetection_tui.utils import invalidate_watchlist_cache
 
 try:
     from itertools import batched
@@ -173,3 +175,10 @@ class WatchListWidget(VerticalScroll):
             if predicate(sibling.virtual_region.y, parent_watchrow.virtual_region.y):
                 sibling.focus_row(at_virtual_x=self.screen.focused.virtual_region.x)
                 break
+
+    @on(buttons.UpdatedWatchEvent)
+    def update_all_rows(self, event: buttons.UpdatedWatchEvent) -> None:
+        """Takes care of updating the single watch in the list of rows"""
+        # Invalidate watchlist cache after recheck
+        invalidate_watchlist_cache()
+        self.all_rows.root[event.uuid] = event.watch
