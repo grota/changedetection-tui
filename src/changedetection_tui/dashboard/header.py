@@ -176,7 +176,7 @@ class WatchListHeader(Widget):
     # exit_on_error=False to be able to catch exception in caller.
     @work(exclusive=True, exit_on_error=False)
     async def load_tags(self) -> ApiListTags:
-        res = await make_api_request(self.app, url="/api/v1/tags")
+        res = await make_api_request(self.app, route="/api/v1/tags")
         tags = ApiListTags.model_validate(res.json())
         return tags
 

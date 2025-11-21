@@ -69,12 +69,12 @@ class DiffPanelScreen(ModalScreen):
             return
         from_data = (
             await make_api_request(
-                self.app, url=f"/api/v1/watch/{self.uuid}/history/{from_ts}"
+                self.app, route=f"/api/v1/watch/{self.uuid}/history/{from_ts}"
             )
         ).text
         to_data = (
             await make_api_request(
-                self.app, url=f"/api/v1/watch/{self.uuid}/history/{to_ts}"
+                self.app, route=f"/api/v1/watch/{self.uuid}/history/{to_ts}"
             )
         ).text
         with TemporaryDirectory() as tmpdir:
@@ -103,7 +103,7 @@ class DiffPanelScreen(ModalScreen):
 
     @work(exclusive=True)
     async def load_data(self, uuid: str) -> tuple[list[int], int, ApiWatch]:
-        res = await make_api_request(self.app, url=f"/api/v1/watch/{uuid}/history")
+        res = await make_api_request(self.app, route=f"/api/v1/watch/{uuid}/history")
         json = cast(dict[str, str], res.json())
         snapshot_timestamps = [
             int(x)
@@ -113,7 +113,7 @@ class DiffPanelScreen(ModalScreen):
                 reverse=True,
             )
         ]
-        res = await make_api_request(self.app, url=f"/api/v1/watch/{uuid}")
+        res = await make_api_request(self.app, route=f"/api/v1/watch/{uuid}")
         watch = ApiWatch.model_validate(res.json())
         best_from_ts = get_best_snapshot_ts_based_on_last_viewed(
             snapshot_timestamps=snapshot_timestamps,
