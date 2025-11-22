@@ -22,6 +22,11 @@
 A terminal user interface (TUI) client for the opensource [changedetection.io](https://github.com/dgtlmoon/changedetection.io) project.
 
 
+## 📽️ Demo Video
+
+[![changedetection-tui demo](https://img.youtube.com/vi/WeZNhjKRou8/0.jpg)](https://www.youtube.com/watch?v=WeZNhjKRou8)
+
+
 ## 🖼️ Screenshots
 
 ### Main view
@@ -142,7 +147,7 @@ Current keybindings can be seen in the footer, they can be remapped in settings.
 
 - [x] implement compact view mode
 - [x] improve docker documentation usage
-- [ ] create video demo?
+- [x] create video demo
 - [ ] custom diff views?
 
 ## 👨‍💻 Development
