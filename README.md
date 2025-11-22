@@ -185,6 +185,12 @@ uv run ruff format .
 
 # Lint code
 uv run ruff check .
+
+# optional: run a local installation of changedetection for development
+docker compose -f compose-dev.yaml up -d
+
+# Update changelog and create tag
+uv run cz bump
 ```
 
 ### 📂 Project Structure
