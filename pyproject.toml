@@ -80,3 +80,6 @@ version_provider = "uv"
 update_changelog_on_bump = true
 changelog_incremental = true
 major_version_zero = true
+pre_bump_hooks = [
+  ".github/scripts/check_main_synced.sh"
+]
