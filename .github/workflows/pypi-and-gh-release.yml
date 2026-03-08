@@ -47,6 +47,8 @@ jobs:
       - name: Build artifacts (sdist + wheel)
         run: uv build
 
+        # From the cli:
+        # uv publish --token pypi-xxxxxxxxx --index testpypi
       - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

@@ -128,7 +128,7 @@ The URL and the API key values found can also be persisted to the configuration 
 
 <img width="1110" height="469" alt="Main settings" src="https://github.com/user-attachments/assets/30ebf7fe-3633-451a-9794-af73b2dc4a95" />
 
-Where you can see that you can avoid storing the API key secret to the configuration file by using the environment variable syntax.
+You can avoid storing the API key secret to the configuration file by using the environment variable syntax.
 
 ### Keybindings
 
