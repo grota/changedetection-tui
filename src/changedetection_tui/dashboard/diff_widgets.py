@@ -13,6 +13,7 @@ from os import path
 import shlex
 
 from textual.worker import Worker, WorkerState
+from changedetection_tui.settings import SETTINGS
 from changedetection_tui.types import ApiListWatch, ApiWatch
 from changedetection_tui.utils import (
     make_api_request,
@@ -67,16 +68,35 @@ class DiffPanelScreen(ModalScreen):
             or isinstance(from_ts, NoSelection)
         ):
             return
-        from_data = (
-            await make_api_request(
-                self.app, route=f"/api/v1/watch/{self.uuid}/history/{from_ts}"
+        diff_settings = SETTINGS.get().diff
+        if diff_settings.mode == "command-based":
+            from_data = (
+                await make_api_request(
+                    self.app, route=f"/api/v1/watch/{self.uuid}/history/{from_ts}"
+                )
+            ).text
+            to_data = (
+                await make_api_request(
+                    self.app, route=f"/api/v1/watch/{self.uuid}/history/{to_ts}"
+                )
+            ).text
+            self._run_command_based_diff(
+                from_data=from_data,
+                to_data=to_data,
+                from_ts=from_ts,
+                to_ts=to_ts,
             )
-        ).text
-        to_data = (
-            await make_api_request(
-                self.app, route=f"/api/v1/watch/{self.uuid}/history/{to_ts}"
-            )
-        ).text
+        else:
+            await self._run_internal_diff(from_ts=from_ts, to_ts=to_ts)
+        _ = self.app.pop_screen()
+
+    def _run_command_based_diff(
+        self,
+        from_data: str,
+        to_data: str,
+        from_ts: int,
+        to_ts: int,
+    ) -> None:
         with TemporaryDirectory() as tmpdir:
             from_filename = self._filename_for_diff(self.api_watch, from_ts)
             to_filename = self._filename_for_diff(self.api_watch, to_ts)
@@ -89,17 +109,78 @@ class DiffPanelScreen(ModalScreen):
                 to_file.write(to_data)
 
             with self.app.suspend():
-                template = "{ICDIFF} --report-identical-files --unified=10 --show-no-spaces {FILE_FROM} {FILE_TO} | less --RAW-CONTROL-CHARS -+S --wordwrap"
-                tokens = {
-                    "{ICDIFF}": self._get_path_for("icdiff"),
-                    "{FILE_FROM}": shlex.quote(from_filepath),
-                    "{FILE_TO}": shlex.quote(to_filepath),
-                }
-                cmd = template
-                for token, value in tokens.items():
-                    cmd = cmd.replace(token, value)
+                cmd = self._expand_command_based_diff_template(
+                    from_filepath=from_filepath,
+                    to_filepath=to_filepath,
+                )
                 _ = subprocess.run(cmd, shell=True, check=True)
-        _ = self.app.pop_screen()
+
+    def _expand_command_based_diff_template(
+        self, from_filepath: str, to_filepath: str
+    ) -> str:
+        settings = SETTINGS.get()
+        template = settings.diff.command_template
+        tokens = {
+            "{ICDIFF}": shlex.quote(self._get_path_for("icdiff")),
+            "{FILE_FROM}": shlex.quote(from_filepath),
+            "{FILE_TO}": shlex.quote(to_filepath),
+        }
+        expanded_command = template
+        for token, value in tokens.items():
+            expanded_command = expanded_command.replace(token, value)
+        return expanded_command
+
+    async def _run_internal_diff(self, from_ts: int, to_ts: int) -> None:
+        settings = SETTINGS.get().diff
+        params: dict[str, str] = {
+            "format": settings.internal_format,
+            "word_diff": self._bool_to_api_string(settings.internal_word_diff),
+            "no_markup": self._bool_to_api_string(settings.internal_no_markup),
+            "type": settings.internal_type,
+            "changesOnly": self._bool_to_api_string(settings.internal_changes_only),
+            "ignoreWhitespace": self._bool_to_api_string(
+                settings.internal_ignore_whitespace
+            ),
+            "removed": self._bool_to_api_string(settings.internal_removed),
+            "added": self._bool_to_api_string(settings.internal_added),
+            "replaced": self._bool_to_api_string(settings.internal_replaced),
+        }
+        internal_diff = (
+            await make_api_request(
+                self.app,
+                route=f"/api/v1/watch/{self.uuid}/difference/{from_ts}/{to_ts}",
+                params=params,
+            )
+        ).text
+        with TemporaryDirectory() as tmpdir:
+            internal_diff_filepath = path.join(
+                tmpdir,
+                self._filename_for_internal_diff(self.api_watch, from_ts, to_ts),
+            )
+            with open(internal_diff_filepath, "w", encoding="utf-8") as output_file:
+                output_file.write(internal_diff)
+            with self.app.suspend():
+                _ = subprocess.run(
+                    [
+                        "less",
+                        "--RAW-CONTROL-CHARS",
+                        "-+S",
+                        "--wordwrap",
+                        internal_diff_filepath,
+                    ],
+                    check=True,
+                )
+
+    def _filename_for_internal_diff(
+        self, watch: ApiListWatch, from_timestamp: int, to_timestamp: int
+    ) -> str:
+        return sanitize_filename(
+            f"{watch.title_or_url()}_internal_diff_{format_timestamp(from_timestamp)}_to_{format_timestamp(to_timestamp)}.txt",
+            replacement_text="_",
+        )
+
+    def _bool_to_api_string(self, value: bool) -> str:
+        return value and "true" or "false"
 
     @work(exclusive=True)
     async def load_data(self, uuid: str) -> tuple[list[int], int, ApiWatch]:

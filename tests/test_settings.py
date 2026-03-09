@@ -46,17 +46,33 @@ DEFAULT_KEYBINDINGS = {
             "description": "KeyBinding to go left in main list.",
             "value": "h",
         },
+        "main_list_go_left_2": {
+            "description": "Alternative keybinding to go left in main list.",
+            "value": "left",
+        },
         "main_list_go_down": {
             "description": "KeyBinding to go down in main list.",
             "value": "j",
+        },
+        "main_list_go_down_2": {
+            "description": "Alternative keybinding to go down in main list.",
+            "value": "down",
         },
         "main_list_go_up": {
             "description": "KeyBinding to go up in main list.",
             "value": "k",
         },
+        "main_list_go_up_2": {
+            "description": "Alternative keybinding to go up in main list.",
+            "value": "up",
+        },
         "main_list_go_right": {
             "description": "KeyBinding to go right in main list.",
             "value": "l",
+        },
+        "main_list_go_right_2": {
+            "description": "Alternative keybinding to go right in main list.",
+            "value": "right",
         },
     },
     "jump_mode": {
@@ -69,6 +85,21 @@ DEFAULT_KEYBINDINGS = {
             "value": "ctrl+c",
         },
     },
+}
+
+
+DEFAULT_DIFF_SETTINGS = {
+    "mode": "command-based",
+    "command_template": "{ICDIFF} --report-identical-files --unified=10 --show-no-spaces {FILE_FROM} {FILE_TO} | less --RAW-CONTROL-CHARS -+S --wordwrap",
+    "internal_format": "text",
+    "internal_word_diff": False,
+    "internal_no_markup": False,
+    "internal_type": "diffLines",
+    "internal_changes_only": True,
+    "internal_ignore_whitespace": False,
+    "internal_removed": True,
+    "internal_added": True,
+    "internal_replaced": True,
 }
 
 
@@ -123,6 +154,7 @@ def test_settings_with_no_yaml(setup_config):
         "api_key": FAKE_APIKEY,
         "compact_mode": True,
         "keybindings": copy.deepcopy(DEFAULT_KEYBINDINGS),
+        "diff": copy.deepcopy(DEFAULT_DIFF_SETTINGS),
     }, "With no file it still needs to be able to access defaults"
     assert not settings.keybindings.non_default_actions
     assert not settings.keybindings.unbound_actions

@@ -55,11 +55,25 @@ class WatchListWidget(VerticalScroll):
             id="main_screen.main_list_go_left",
         ),
         Binding(
+            key=default_keymap["main_screen"]["main_list_go_left_2"]["default"],
+            action="app.focus_previous",
+            description="←",
+            tooltip="Focus previous element",
+            id="main_screen.main_list_go_left_2",
+        ),
+        Binding(
             key=default_keymap["main_screen"]["main_list_go_down"]["default"],
             action="go_down",
             description="↓",  # U+2193 Downwards Arrow
             tooltip="Focus element in next row",
             id="main_screen.main_list_go_down",
+        ),
+        Binding(
+            key=default_keymap["main_screen"]["main_list_go_down_2"]["default"],
+            action="go_down",
+            description="↓",
+            tooltip="Focus element in next row",
+            id="main_screen.main_list_go_down_2",
         ),
         Binding(
             key=default_keymap["main_screen"]["main_list_go_up"]["default"],
@@ -69,11 +83,25 @@ class WatchListWidget(VerticalScroll):
             id="main_screen.main_list_go_up",
         ),
         Binding(
+            key=default_keymap["main_screen"]["main_list_go_up_2"]["default"],
+            action="go_up",
+            description="↑",
+            tooltip="Focus element in previous row",
+            id="main_screen.main_list_go_up_2",
+        ),
+        Binding(
             key=default_keymap["main_screen"]["main_list_go_right"]["default"],
             action="app.focus_next",
             description="→",  # U+2192 Rightwards Arrow
             tooltip="Focus next element",
             id="main_screen.main_list_go_right",
+        ),
+        Binding(
+            key=default_keymap["main_screen"]["main_list_go_right_2"]["default"],
+            action="app.focus_next",
+            description="→",
+            tooltip="Focus next element",
+            id="main_screen.main_list_go_right_2",
         ),
     ]
 

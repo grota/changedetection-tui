@@ -1,5 +1,5 @@
 from contextvars import ContextVar
-from typing import Annotated, Any, Callable
+from typing import Annotated, Any, Callable, Literal
 
 try:
     from typing import override
@@ -52,6 +52,24 @@ def base_serialize_keybinding_to_yaml_dict(
 
 KeyBinding = Annotated[str | None, BeforeValidator(parse_yaml_key_bindings)]
 
+
+DEFAULT_COMMAND_BASED_DIFF_COMMAND = "{ICDIFF} --report-identical-files --unified=10 --show-no-spaces {FILE_FROM} {FILE_TO} | less --RAW-CONTROL-CHARS -+S --wordwrap"
+
+
+class DiffSettings(BaseModel):
+    mode: Literal["command-based", "internal"] = "command-based"
+    command_template: str = DEFAULT_COMMAND_BASED_DIFF_COMMAND
+    internal_format: Literal["text", "html", "htmlcolor", "markdown"] = "text"
+    internal_word_diff: bool = False
+    internal_no_markup: bool = False
+    internal_type: Literal["diffLines", "diffWords"] = "diffLines"
+    internal_changes_only: bool = True
+    internal_ignore_whitespace: bool = False
+    internal_removed: bool = True
+    internal_added: bool = True
+    internal_replaced: bool = True
+
+
 default_keymap = {
     "main_screen": {
         "open_jump_mode": {
@@ -89,9 +107,19 @@ default_keymap = {
             "description": "KeyBinding to go left in main list.",
             "label": "Go left",
         },
+        "main_list_go_left_2": {
+            "default": "left",
+            "description": "Alternative keybinding to go left in main list.",
+            "label": "Go left",
+        },
         "main_list_go_down": {
             "default": "j",
             "description": "KeyBinding to go down in main list.",
+            "label": "Go down",
+        },
+        "main_list_go_down_2": {
+            "default": "down",
+            "description": "Alternative keybinding to go down in main list.",
             "label": "Go down",
         },
         "main_list_go_up": {
@@ -99,9 +127,19 @@ default_keymap = {
             "description": "KeyBinding to go up in main list.",
             "label": "Go up",
         },
+        "main_list_go_up_2": {
+            "default": "up",
+            "description": "Alternative keybinding to go up in main list.",
+            "label": "Go up",
+        },
         "main_list_go_right": {
             "default": "l",
             "description": "KeyBinding to go right in main list.",
+            "label": "Go right",
+        },
+        "main_list_go_right_2": {
+            "default": "right",
+            "description": "Alternative keybinding to go right in main list.",
             "label": "Go right",
         },
     },
@@ -257,6 +295,7 @@ class Settings(BaseSettings):
         },
     ] = True
     keybindings: KeyBindingSettings = Field(default_factory=KeyBindingSettings)
+    diff: DiffSettings = Field(default_factory=DiffSettings)
 
     @classmethod
     @override
