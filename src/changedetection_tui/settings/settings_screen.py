@@ -11,7 +11,8 @@ from textual.binding import Binding
 from textual.events import Key
 from textual.message import Message
 from textual.screen import ModalScreen
-from textual.containers import Grid, HorizontalGroup, VerticalScroll
+from textual.containers import Grid, HorizontalGroup, VerticalGroup, VerticalScroll
+from textual.types import NoSelection
 from textual.validation import Failure, ValidationResult, Validator
 from textual.widgets import (
     Checkbox,
@@ -19,6 +20,7 @@ from textual.widgets import (
     Label,
     Input,
     Button,
+    Select,
     Static,
     TabPane,
     TabbedContent,
@@ -27,6 +29,8 @@ from textual.widgets import (
 from changedetection_tui.settings.kb_report import KeyBindingsReport
 from changedetection_tui.settings.locations import config_file
 from changedetection_tui.settings import (
+    DEFAULT_COMMAND_BASED_DIFF_COMMAND,
+    DiffSettings,
     SETTINGS,
     JumpModeBindings,
     KeyBindingSettings,
@@ -123,6 +127,14 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
     def on_mount(self):
         _ = self.query_exactly_one("ContentTabs").focus()
         self.input_kbs_validation_always_pass = False
+        diff_mode = self._required_select_value("select-for-diff-mode")
+        self._toggle_diff_settings_visibility(diff_mode)
+        tabbed_content = self.query_exactly_one("#tabbed-content-root")
+        if not isinstance(tabbed_content, TabbedContent):
+            raise ValueError(f"Expected TabbedContent, got {type(tabbed_content)}")
+        self.query_exactly_one("#button-reset-all-keybindings").styles.display = (
+            "block" if tabbed_content.active == "tabpane-keybindings" else "none"
+        )
 
     @on(Button.Pressed, ".button-capture")
     def start_key_capturing(self, event: Button.Pressed) -> None:
@@ -200,8 +212,25 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
         self, event: TabbedContent.TabActivated
     ) -> None:
         self.query_exactly_one("#button-reset-all-keybindings").styles.display = (
-            "none" if event.pane.id == "tabpane-main" else "block"
+            "block" if event.pane.id == "tabpane-keybindings" else "none"
         )
+
+    @on(Select.Changed, "#select-for-diff-mode")
+    def diff_mode_has_changed(self, event: Select.Changed) -> None:
+        if isinstance(event.value, NoSelection):
+            return
+        self._toggle_diff_settings_visibility(str(event.value))
+
+    @on(Button.Pressed, "#button-reset-diff-command-template")
+    def reset_diff_command_template_to_default(self) -> None:
+        input_for_diff_command_template = self.query_exactly_one(
+            "#input-for-diff-command-template"
+        )
+        if not isinstance(input_for_diff_command_template, Input):
+            raise ValueError(
+                f"Expected Input, got {type(input_for_diff_command_template)}"
+            )
+        input_for_diff_command_template.value = DEFAULT_COMMAND_BASED_DIFF_COMMAND
 
     @on(Button.Pressed, "#button-reset-all-keybindings")
     def reset_all_keybindings(self) -> None:
@@ -330,6 +359,93 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
                                 ] = transient_failure_static
                                 transient_failure_static.display = "none"
                                 yield transient_failure_static
+                with TabPane("Diff", id="tabpane-diff"):
+                    with Grid(id="diff-settings-grid"):
+                        yield Label("Diff mode")
+                        yield Select[str](
+                            [
+                                ("Command based", "command-based"),
+                                ("Internal", "internal"),
+                            ],
+                            id="select-for-diff-mode",
+                            value=self.settings.diff.mode,
+                            allow_blank=False,
+                        )
+
+                        with VerticalGroup(id="group-command-based-diff-settings"):
+                            yield Label("Command template")
+                            yield Input(
+                                value=self.settings.diff.command_template,
+                                id="input-for-diff-command-template",
+                            )
+                            yield Label(
+                                "Available tokens: {ICDIFF}, {FILE_FROM}, {FILE_TO}. They are expanded automatically.",
+                                classes="required-field-description",
+                            )
+                            yield Button(
+                                label="Reset to default",
+                                id="button-reset-diff-command-template",
+                                variant="warning",
+                            )
+
+                        with Grid(id="group-internal-diff-settings"):
+                            yield Label("Format")
+                            yield Select[str](
+                                [
+                                    ("text", "text"),
+                                    ("html", "html"),
+                                    ("htmlcolor", "htmlcolor"),
+                                    ("markdown", "markdown"),
+                                ],
+                                id="select-for-diff-internal-format",
+                                value=self.settings.diff.internal_format,
+                                allow_blank=False,
+                            )
+                            yield Label("Word-level diff")
+                            yield Checkbox(
+                                value=self.settings.diff.internal_word_diff,
+                                id="checkbox-for-diff-internal-word_diff",
+                            )
+                            yield Label("No markup")
+                            yield Checkbox(
+                                value=self.settings.diff.internal_no_markup,
+                                id="checkbox-for-diff-internal-no_markup",
+                            )
+                            yield Label("Diff type")
+                            yield Select[str](
+                                [
+                                    ("diffLines", "diffLines"),
+                                    ("diffWords", "diffWords"),
+                                ],
+                                id="select-for-diff-internal-type",
+                                value=self.settings.diff.internal_type,
+                                allow_blank=False,
+                            )
+                            yield Label("Changes only")
+                            yield Checkbox(
+                                value=self.settings.diff.internal_changes_only,
+                                id="checkbox-for-diff-internal-changesOnly",
+                            )
+                            yield Label("Ignore whitespace")
+                            yield Checkbox(
+                                value=self.settings.diff.internal_ignore_whitespace,
+                                id="checkbox-for-diff-internal-ignoreWhitespace",
+                            )
+                            yield Label("Include removed")
+                            yield Checkbox(
+                                value=self.settings.diff.internal_removed,
+                                id="checkbox-for-diff-internal-removed",
+                            )
+                            yield Label("Include added")
+                            yield Checkbox(
+                                value=self.settings.diff.internal_added,
+                                id="checkbox-for-diff-internal-added",
+                            )
+                            yield Label("Include replaced")
+                            yield Checkbox(
+                                value=self.settings.diff.internal_replaced,
+                                id="checkbox-for-diff-internal-replaced",
+                            )
             with HorizontalGroup(classes="global-action-buttons"):
                 yield Button(
                     label="Cancel",
@@ -365,6 +481,79 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
         if not isinstance(checkbox_for_compact_mode, Checkbox):
             raise ValueError(f"Expected Checkbox, got {type(input_for_url)}")
 
+        input_for_diff_command_template = self.screen.query_exactly_one(
+            "#input-for-diff-command-template"
+        )
+        if not isinstance(input_for_diff_command_template, Input):
+            raise ValueError(
+                f"Expected Input, got {type(input_for_diff_command_template)}"
+            )
+        checkbox_for_diff_internal_word_diff = self.screen.query_exactly_one(
+            "#checkbox-for-diff-internal-word_diff"
+        )
+        if not isinstance(checkbox_for_diff_internal_word_diff, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_diff_internal_word_diff)}"
+            )
+        checkbox_for_diff_internal_no_markup = self.screen.query_exactly_one(
+            "#checkbox-for-diff-internal-no_markup"
+        )
+        if not isinstance(checkbox_for_diff_internal_no_markup, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_diff_internal_no_markup)}"
+            )
+        checkbox_for_diff_internal_changes_only = self.screen.query_exactly_one(
+            "#checkbox-for-diff-internal-changesOnly"
+        )
+        if not isinstance(checkbox_for_diff_internal_changes_only, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_diff_internal_changes_only)}"
+            )
+        checkbox_for_diff_internal_ignore_whitespace = self.screen.query_exactly_one(
+            "#checkbox-for-diff-internal-ignoreWhitespace"
+        )
+        if not isinstance(checkbox_for_diff_internal_ignore_whitespace, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_diff_internal_ignore_whitespace)}"
+            )
+        checkbox_for_diff_internal_removed = self.screen.query_exactly_one(
+            "#checkbox-for-diff-internal-removed"
+        )
+        if not isinstance(checkbox_for_diff_internal_removed, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_diff_internal_removed)}"
+            )
+        checkbox_for_diff_internal_added = self.screen.query_exactly_one(
+            "#checkbox-for-diff-internal-added"
+        )
+        if not isinstance(checkbox_for_diff_internal_added, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_diff_internal_added)}"
+            )
+        checkbox_for_diff_internal_replaced = self.screen.query_exactly_one(
+            "#checkbox-for-diff-internal-replaced"
+        )
+        if not isinstance(checkbox_for_diff_internal_replaced, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_diff_internal_replaced)}"
+            )
+
+        diff_settings = DiffSettings(
+            mode=self._required_select_value("select-for-diff-mode"),  # pyright: ignore[reportArgumentType]
+            command_template=input_for_diff_command_template.value,
+            internal_format=self._required_select_value(
+                "select-for-diff-internal-format"
+            ),  # pyright: ignore[reportArgumentType]
+            internal_word_diff=checkbox_for_diff_internal_word_diff.value,
+            internal_no_markup=checkbox_for_diff_internal_no_markup.value,
+            internal_type=self._required_select_value("select-for-diff-internal-type"),  # pyright: ignore[reportArgumentType]
+            internal_changes_only=checkbox_for_diff_internal_changes_only.value,
+            internal_ignore_whitespace=checkbox_for_diff_internal_ignore_whitespace.value,
+            internal_removed=checkbox_for_diff_internal_removed.value,
+            internal_added=checkbox_for_diff_internal_added.value,
+            internal_replaced=checkbox_for_diff_internal_replaced.value,
+        )
+
         kbs_payload: dict[str, dict[str, dict[str, str]]] = {}
         for namespaced_action, input in self.kb_inputs.items():
             set_nested_dict(
@@ -382,8 +571,27 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
             api_key=form_apikey,
             compact_mode=checkbox_for_compact_mode.value,
             keybindings=KeyBindingSettings(**kbs_payload),  # pyright: ignore[reportArgumentType]
+            diff=diff_settings,
         )
         return settings_from_form
+
+    def _required_select_value(self, id: str) -> str:
+        select = self.query_exactly_one(f"#{id}")
+        if not isinstance(select, Select):
+            raise ValueError(f"Expected Select, got {type(select)}")
+        if isinstance(select.value, NoSelection):
+            raise ValueError(f"No selection for Select #{id}")
+        return str(select.value)
+
+    def _toggle_diff_settings_visibility(self, mode: str) -> None:
+        command_based_settings = self.query_exactly_one(
+            "#group-command-based-diff-settings"
+        )
+        internal_settings = self.query_exactly_one("#group-internal-diff-settings")
+        command_based_settings.styles.display = (
+            "block" if mode == "command-based" else "none"
+        )
+        internal_settings.styles.display = "block" if mode == "internal" else "none"
 
     def _clean_up_transients_for_input(self, input: Input) -> None:
         namespaced_action_name = self._extract_context_name_and_action_from_input(input)

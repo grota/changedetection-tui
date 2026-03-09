@@ -1,4 +1,6 @@
 from .settings import (
+    DEFAULT_COMMAND_BASED_DIFF_COMMAND,
+    DiffSettings,
     SETTINGS,
     JumpModeBindings,
     KeyBindingSettings,
@@ -8,6 +10,8 @@ from .settings import (
 )
 
 __all__ = [
+    "DEFAULT_COMMAND_BASED_DIFF_COMMAND",
+    "DiffSettings",
     "SETTINGS",
     "JumpModeBindings",
     "KeyBindingSettings",

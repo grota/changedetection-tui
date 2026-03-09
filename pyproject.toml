@@ -83,3 +83,6 @@ major_version_zero = true
 pre_bump_hooks = [
   ".github/scripts/check_main_synced.sh"
 ]
+
+[tool.ruff]
+exclude = [ 'changedetection.io' ]

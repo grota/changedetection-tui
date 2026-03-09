@@ -313,6 +313,62 @@ SettingsScreen {
           }
         } /* END keybindings-settings-grid */
       } /* END #tabpane-keybindings */
+      #tabpane-diff {
+        #diff-settings-grid {
+          grid-size: 2;
+          grid-columns: 1fr 2fr;
+          grid-gutter: 1 1;
+          height: auto;
+
+          Label {
+            content-align: right middle;
+            width: 1fr;
+            height: 100%;
+          }
+
+          #group-command-based-diff-settings {
+            column-span: 2;
+            height: auto;
+
+            Label {
+              content-align: left middle;
+              width: 1fr;
+              height: auto;
+
+              &.required-field-description {
+                color: $text-muted;
+              }
+            }
+
+            #input-for-diff-command-template {
+              height: auto;
+              width: 1fr;
+            }
+
+            Button {
+              width: auto;
+              margin-top: 1;
+            }
+          }
+
+          #group-internal-diff-settings {
+            column-span: 2;
+            grid-size: 2;
+            grid-columns: 1fr 1fr;
+            grid-gutter: 1 1;
+            height: auto;
+
+            Label {
+              content-align: right middle;
+            }
+
+            Select,
+            Checkbox {
+              width: 1fr;
+            }
+          }
+        } /* END #diff-settings-grid */
+      } /* END #tabpane-diff */
     } /* END tabbed-content-root */
     .global-action-buttons {
       align-horizontal: right;
