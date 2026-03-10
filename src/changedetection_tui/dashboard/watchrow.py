@@ -17,7 +17,6 @@ from changedetection_tui.dashboard.buttons import (
     RecheckButton,
     SwitchViewedStateButton,
     DiffButton,
-    UpdatedWatchEvent,
 )
 from changedetection_tui.utils import format_timestamp
 
@@ -103,20 +102,33 @@ class WatchRow(HorizontalGroup):
                 action=f'focused.execute_diff("{self.uuid}")',
             )
 
-    @on(UpdatedWatchEvent)
-    def refresh_the_watchrow(self, event: UpdatedWatchEvent) -> None:
-        self.api_list_watch = event.watch
+    # NOTE: UpdatedWatchEvent is NOT handled here.  It bubbles up to
+    # WatchListWidget.update_all_rows which mutates the shared data reactive
+    # and triggers a single recompose of the whole list.  Handling it here
+    # as well would cause a WatchRow-level recompose that destroys the
+    # focused button *before* the list-level handler can capture focus
+    # context, resulting in wrong focus restoration.
 
     @on(Click)
-    def focus_row(self, at_virtual_x: int | None = None) -> None:
+    def focus_row(
+        self,
+        at_virtual_x: int | None = None,
+        at_col_index: int | None = None,
+    ) -> None:
         my_focusables = [w for w in list(self.query()) if w.focusable]
-        idx_in_row = next(
-            (
-                i
-                for i, w in enumerate(my_focusables)
-                if w.virtual_region.x == at_virtual_x
-            ),
-            0,
-        )
-        if self.screen.focused not in my_focusables:
-            self.screen.set_focus(my_focusables[idx_in_row])
+        if not my_focusables:
+            return
+        if at_col_index is not None:
+            # Direct index lookup – used after recompose when virtual_region
+            # coordinates are not yet reliable.
+            idx_in_row = min(at_col_index, len(my_focusables) - 1)
+        else:
+            idx_in_row = next(
+                (
+                    i
+                    for i, w in enumerate(my_focusables)
+                    if w.virtual_region.x == at_virtual_x
+                ),
+                0,
+            )
+        self.screen.set_focus(my_focusables[idx_in_row])

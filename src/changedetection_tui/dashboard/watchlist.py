@@ -140,15 +140,7 @@ class WatchListWidget(VerticalScroll):
             rows_per_page = self.rows_per_page_from_resize
         self.can_focus: bool = False
         # order, filter, chunk. Here I have to materialize the list because I need to get the length of it.
-        filtered_tuples = [
-            x
-            for x in sorted(
-                self.all_rows.root.items(),
-                key=self._get_list_sorting_key,
-                reverse=(self.ordering.order_direction == Ordering.OrderDirection.DESC),
-            )
-            if not self.only_unviewed or not x[1].viewed
-        ]  # [(uuid, ApiListWatch), (uuid, ApiListWatch), ...]
+        filtered_tuples = self._visible_rows()  # [(uuid, ApiListWatch), ...]
         tuples_for_page = batched(filtered_tuples, rows_per_page)
         batch = next(
             islice(tuples_for_page, self.current_page, self.current_page + 1), ()
@@ -209,4 +201,102 @@ class WatchListWidget(VerticalScroll):
         """Takes care of updating the single watch in the list of rows"""
         # Invalidate watchlist cache after recheck
         invalidate_watchlist_cache()
+        # Capture focus context before data mutation/recompose. Recompose can
+        # destroy the currently focused button widget.
+        visible_rows_before = self._visible_rows()
+        focused_row_uuid, focused_col_index = self._focused_row_uuid_and_col_index()
+        # Keep row position as fallback when the focused row disappears after
+        # filtering (e.g. toggling "viewed" while "only_unviewed" is active).
+        focused_row_index = (
+            next(
+                (
+                    idx
+                    for idx, (uuid, _) in enumerate(visible_rows_before)
+                    if uuid == focused_row_uuid
+                ),
+                None,
+            )
+            if focused_row_uuid
+            else None
+        )
+        self.app.log(focused_row_uuid, focused_col_index, focused_row_index)
+
         self.all_rows.root[event.uuid] = event.watch
+        self.mutate_reactive(WatchListWidget.all_rows)
+
+        if focused_col_index is None:
+            return
+        visible_rows_after = self._visible_rows()
+        # Choose a stable target row after refresh: prefer same row, otherwise
+        # preserve user's relative position in the list.
+        target_uuid = self._target_uuid_after_update(
+            visible_rows_after=visible_rows_after,
+            focused_row_uuid=focused_row_uuid,
+            focused_row_index=focused_row_index,
+        )
+        if not target_uuid:
+            return
+        # Restore focus after the DOM has been refreshed.
+        _ = self.call_after_refresh(
+            self._restore_focus_on_row,
+            target_uuid,
+            focused_col_index,
+        )
+
+    def _visible_rows(
+        self,
+    ) -> list[tuple[str, ApiListWatch]]:
+        return [
+            x
+            for x in sorted(
+                self.all_rows.root.items(),
+                key=self._get_list_sorting_key,
+                reverse=(self.ordering.order_direction == Ordering.OrderDirection.DESC),
+            )
+            if not self.only_unviewed or not x[1].viewed
+        ]
+
+    def _focused_row_uuid_and_col_index(self) -> tuple[str | None, int | None]:
+        focused = self.screen.focused
+        if not focused:
+            return (None, None)
+        parent = focused
+        while parent and not isinstance(parent, WatchRow):
+            parent = parent.parent
+        if not isinstance(parent, WatchRow):
+            return (None, None)
+        # Save the column index (0=Recheck, 1=Set viewed, 2=View Diff) so we
+        # can restore focus to the same action column on the target row.
+        focusables = [w for w in parent.query() if w.focusable]
+        col_index = next(
+            (i for i, w in enumerate(focusables) if w is focused),
+            0,
+        )
+        return (parent.uuid, col_index)
+
+    def _target_uuid_after_update(
+        self,
+        visible_rows_after: list[tuple[str, ApiListWatch]],
+        focused_row_uuid: str | None,
+        focused_row_index: int | None,
+    ) -> str | None:
+        if not visible_rows_after:
+            return None
+        if focused_row_uuid and any(
+            focused_row_uuid == row_uuid for row_uuid, _ in visible_rows_after
+        ):
+            return focused_row_uuid
+        if focused_row_index is None:
+            return None
+        if focused_row_index < len(visible_rows_after):
+            return visible_rows_after[focused_row_index][0]
+        return visible_rows_after[-1][0]
+
+    def _restore_focus_on_row(self, target_uuid: str, focused_col_index: int) -> None:
+        target_row = next(
+            (row for row in self.query(WatchRow) if row.uuid == target_uuid),
+            None,
+        )
+        if not target_row:
+            return
+        target_row.focus_row(at_col_index=focused_col_index)
