@@ -1,3 +1,14 @@
+## 1.3.0 (2026-03-11)
+
+### Feat
+
+- skip diff settings
+- add diff api support, alternative arrow based movement
+
+### Fix
+
+- fix focus lost on set as...
+
 ## 1.2.0 (2025-11-22)
 
 ### Feat
