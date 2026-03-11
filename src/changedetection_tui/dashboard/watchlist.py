@@ -219,8 +219,6 @@ class WatchListWidget(VerticalScroll):
             if focused_row_uuid
             else None
         )
-        self.app.log(focused_row_uuid, focused_col_index, focused_row_index)
-
         self.all_rows.root[event.uuid] = event.watch
         self.mutate_reactive(WatchListWidget.all_rows)
 

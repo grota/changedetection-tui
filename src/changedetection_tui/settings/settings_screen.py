@@ -276,6 +276,8 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
                             "(In the API Key field you can use the $ENV_VAR syntax to avoid storing the secret value to the config file)",
                             classes="required-field-description",
                         )
+                with TabPane("UI", id="tabpane-ui"):
+                    with Grid(id="grid-ui-settings"):
                         yield Label(
                             Settings.model_fields["compact_mode"].metadata[0]["help"]
                             or "No Label"
@@ -283,6 +285,16 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
                         yield Checkbox(
                             value=self.settings.compact_mode,
                             id="checkbox-for-compact_mode",
+                        )
+                        yield Label(
+                            Settings.model_fields["skip_diff_dialog"].metadata[0][
+                                "help"
+                            ]
+                            or "No Label"
+                        )
+                        yield Checkbox(
+                            value=self.settings.skip_diff_dialog,
+                            id="checkbox-for-skip_diff_dialog",
                         )
                 with TabPane("Keybindings", id="tabpane-keybindings"):
                     with Grid(id="keybindings-settings-grid"):
@@ -481,6 +493,14 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
         if not isinstance(checkbox_for_compact_mode, Checkbox):
             raise ValueError(f"Expected Checkbox, got {type(input_for_url)}")
 
+        checkbox_for_skip_diff_dialog = self.screen.query_exactly_one(
+            "#checkbox-for-skip_diff_dialog"
+        )
+        if not isinstance(checkbox_for_skip_diff_dialog, Checkbox):
+            raise ValueError(
+                f"Expected Checkbox, got {type(checkbox_for_skip_diff_dialog)}"
+            )
+
         input_for_diff_command_template = self.screen.query_exactly_one(
             "#input-for-diff-command-template"
         )
@@ -570,6 +590,7 @@ class SettingsScreen(ModalScreen[None], inherit_bindings=False):
             url=form_url,
             api_key=form_apikey,
             compact_mode=checkbox_for_compact_mode.value,
+            skip_diff_dialog=checkbox_for_skip_diff_dialog.value,
             keybindings=KeyBindingSettings(**kbs_payload),  # pyright: ignore[reportArgumentType]
             diff=diff_settings,
         )

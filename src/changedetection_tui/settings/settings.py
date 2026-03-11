@@ -294,6 +294,12 @@ class Settings(BaseSettings):
             "help": "Display in compact mode",
         },
     ] = True
+    skip_diff_dialog: Annotated[
+        bool,
+        {
+            "help": "Skip the diff dialog and show diff directly using defaults",
+        },
+    ] = True
     keybindings: KeyBindingSettings = Field(default_factory=KeyBindingSettings)
     diff: DiffSettings = Field(default_factory=DiffSettings)
 

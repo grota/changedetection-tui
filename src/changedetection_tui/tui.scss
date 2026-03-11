@@ -265,6 +265,25 @@ SettingsScreen {
         }
 
       } /* END #tabpane-main */
+
+      #tabpane-ui {
+        #grid-ui-settings {
+          grid-size: 2;
+          grid-columns: 1fr 2fr;
+          grid-rows: auto;
+          grid-gutter: 1 1;
+          height: auto;
+          Label {
+            width: 100%;
+            height: 100%;
+            text-align: right;
+            content-align-vertical: middle;
+          }
+          Checkbox {
+          }
+        }
+      } /* END #tabpane-ui */
+
       #tabpane-keybindings {
         #keybindings-settings-grid {
           grid-size: 2;
