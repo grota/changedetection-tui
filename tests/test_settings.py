@@ -153,6 +153,7 @@ def test_settings_with_no_yaml(setup_config):
         "url": FAKE_URL,
         "api_key": FAKE_APIKEY,
         "compact_mode": True,
+        "skip_diff_dialog": True,
         "keybindings": copy.deepcopy(DEFAULT_KEYBINDINGS),
         "diff": copy.deepcopy(DEFAULT_DIFF_SETTINGS),
     }, "With no file it still needs to be able to access defaults"

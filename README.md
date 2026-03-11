@@ -145,10 +145,7 @@ Current keybindings can be seen in the footer, they can be remapped in settings.
 
 ## Roadmap
 
-- [x] implement compact view mode
-- [x] improve docker documentation usage
-- [x] create video demo
-- [ ] custom diff views?
+Right now the software is complete, I can review PRs for additional feature requests, but the goal is mainly to keep up with the upstream API changes.
 
 ## 👨‍💻 Development
 

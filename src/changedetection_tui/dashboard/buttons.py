@@ -1,11 +1,14 @@
 from typing import final
 import httpx
 from textual import on
-from changedetection_tui.dashboard.diff_widgets import DiffPanelScreen
-from changedetection_tui.types import ApiListWatch
+from changedetection_tui.dashboard.diff_widgets import DiffPanelScreen, execute_diff
+from changedetection_tui.types import ApiListWatch, ApiWatch
 from textual.widgets import Button
 from textual.message import Message
-from changedetection_tui.utils import make_api_request
+from changedetection_tui.utils import (
+    make_api_request,
+    get_best_snapshot_ts_based_on_last_viewed,
+)
 
 assigned_jump_keys: set[str] = set()
 
@@ -52,7 +55,34 @@ class DiffButton(Button):
             self.jump_key = key
 
     async def action_execute_diff(self, uuid: str) -> None:
-        self.app.push_screen(DiffPanelScreen(uuid=uuid))
+        from changedetection_tui.settings import SETTINGS
+
+        if not SETTINGS.get().skip_diff_dialog:
+            self.app.push_screen(DiffPanelScreen(uuid=uuid))
+            return
+
+        # Skip the dialog: fetch history and watch data, then run diff directly.
+        res = await make_api_request(self.app, route=f"/api/v1/watch/{uuid}/history")
+        snapshot_timestamps = [
+            int(x)
+            for x in sorted(res.json().keys(), key=lambda x: int(x), reverse=True)
+        ]
+        res = await make_api_request(self.app, route=f"/api/v1/watch/{uuid}")
+        watch = ApiWatch.model_validate(res.json())
+        from_ts = get_best_snapshot_ts_based_on_last_viewed(
+            snapshot_timestamps=snapshot_timestamps,
+            last_viewed=int(watch.last_viewed),
+        )
+        to_ts = snapshot_timestamps[0]
+        if from_ts == to_ts:
+            return
+        await execute_diff(
+            app=self.app,
+            watch=watch,
+            uuid=uuid,
+            from_ts=from_ts,
+            to_ts=to_ts,
+        )
 
 
 @final

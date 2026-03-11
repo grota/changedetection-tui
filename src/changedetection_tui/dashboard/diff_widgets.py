@@ -3,7 +3,7 @@ import sys
 import shutil
 import subprocess
 from textual import on, work
-from textual.app import ComposeResult
+from textual.app import App, ComposeResult
 from textual.containers import Grid, VerticalGroup
 from textual.screen import ModalScreen
 from textual.types import NoSelection
@@ -21,6 +21,162 @@ from changedetection_tui.utils import (
     get_best_snapshot_ts_based_on_last_viewed,
 )
 from pathvalidate import sanitize_filename
+
+
+def _get_path_for(cmd: str) -> str:
+    """Get the path to cmd in the current Python environment."""
+    cmd_path = shutil.which(cmd)
+    if cmd_path:
+        return cmd_path
+
+    python_dir = path.dirname(sys.executable)
+    fallback_path = path.join(python_dir, cmd)
+    if path.exists(fallback_path):
+        return fallback_path
+
+    for bin_dir in ["bin", "Scripts"]:
+        fallback_path = path.join(path.dirname(python_dir), bin_dir, cmd)
+        if path.exists(fallback_path):
+            return fallback_path
+
+    raise RuntimeError(f"{cmd} binary not found.")
+
+
+def _bool_to_api_string(value: bool) -> str:
+    return value and "true" or "false"
+
+
+def _filename_for_diff(watch: ApiListWatch, timestamp: int) -> str:
+    return sanitize_filename(
+        f"{watch.title_or_url()}_{format_timestamp(timestamp)}",
+        replacement_text="_",
+    )
+
+
+def _filename_for_internal_diff(
+    watch: ApiListWatch, from_timestamp: int, to_timestamp: int
+) -> str:
+    return sanitize_filename(
+        f"{watch.title_or_url()}_internal_diff_{format_timestamp(from_timestamp)}_to_{format_timestamp(to_timestamp)}.txt",
+        replacement_text="_",
+    )
+
+
+def _expand_command_based_diff_template(from_filepath: str, to_filepath: str) -> str:
+    settings = SETTINGS.get()
+    template = settings.diff.command_template
+    tokens = {
+        "{ICDIFF}": shlex.quote(_get_path_for("icdiff")),
+        "{FILE_FROM}": shlex.quote(from_filepath),
+        "{FILE_TO}": shlex.quote(to_filepath),
+    }
+    expanded_command = template
+    for token, value in tokens.items():
+        expanded_command = expanded_command.replace(token, value)
+    return expanded_command
+
+
+def run_command_based_diff(
+    app: App,  # type: ignore[type-arg]
+    watch: ApiListWatch,
+    from_data: str,
+    to_data: str,
+    from_ts: int,
+    to_ts: int,
+) -> None:
+    with TemporaryDirectory() as tmpdir:
+        from_filename = _filename_for_diff(watch, from_ts)
+        to_filename = _filename_for_diff(watch, to_ts)
+        from_filepath = path.join(tmpdir, from_filename)
+        to_filepath = path.join(tmpdir, to_filename)
+
+        with open(from_filepath, "w", encoding="utf-8") as from_file:
+            from_file.write(from_data)
+        with open(to_filepath, "w", encoding="utf-8") as to_file:
+            to_file.write(to_data)
+
+        with app.suspend():
+            cmd = _expand_command_based_diff_template(
+                from_filepath=from_filepath,
+                to_filepath=to_filepath,
+            )
+            _ = subprocess.run(cmd, shell=True, check=True)
+
+
+async def run_internal_diff(
+    app: App,  # type: ignore[type-arg]
+    watch: ApiListWatch,
+    uuid: str,
+    from_ts: int,
+    to_ts: int,
+) -> None:
+    settings = SETTINGS.get().diff
+    params: dict[str, str] = {
+        "format": settings.internal_format,
+        "word_diff": _bool_to_api_string(settings.internal_word_diff),
+        "no_markup": _bool_to_api_string(settings.internal_no_markup),
+        "type": settings.internal_type,
+        "changesOnly": _bool_to_api_string(settings.internal_changes_only),
+        "ignoreWhitespace": _bool_to_api_string(settings.internal_ignore_whitespace),
+        "removed": _bool_to_api_string(settings.internal_removed),
+        "added": _bool_to_api_string(settings.internal_added),
+        "replaced": _bool_to_api_string(settings.internal_replaced),
+    }
+    internal_diff = (
+        await make_api_request(
+            app,
+            route=f"/api/v1/watch/{uuid}/difference/{from_ts}/{to_ts}",
+            params=params,
+        )
+    ).text
+    with TemporaryDirectory() as tmpdir:
+        internal_diff_filepath = path.join(
+            tmpdir,
+            _filename_for_internal_diff(watch, from_ts, to_ts),
+        )
+        with open(internal_diff_filepath, "w", encoding="utf-8") as output_file:
+            output_file.write(internal_diff)
+        with app.suspend():
+            _ = subprocess.run(
+                [
+                    "less",
+                    "--RAW-CONTROL-CHARS",
+                    "-+S",
+                    "--wordwrap",
+                    internal_diff_filepath,
+                ],
+                check=True,
+            )
+
+
+async def execute_diff(
+    app: App,  # type: ignore[type-arg]
+    watch: ApiListWatch,
+    uuid: str,
+    from_ts: int,
+    to_ts: int,
+) -> None:
+    """Run the diff for the given timestamps using the current diff settings."""
+    diff_settings = SETTINGS.get().diff
+    if diff_settings.mode == "command-based":
+        from_data = (
+            await make_api_request(app, route=f"/api/v1/watch/{uuid}/history/{from_ts}")
+        ).text
+        to_data = (
+            await make_api_request(app, route=f"/api/v1/watch/{uuid}/history/{to_ts}")
+        ).text
+        run_command_based_diff(
+            app=app,
+            watch=watch,
+            from_data=from_data,
+            to_data=to_data,
+            from_ts=from_ts,
+            to_ts=to_ts,
+        )
+    else:
+        await run_internal_diff(
+            app=app, watch=watch, uuid=uuid, from_ts=from_ts, to_ts=to_ts
+        )
 
 
 class DiffPanelScreen(ModalScreen):
@@ -68,119 +224,14 @@ class DiffPanelScreen(ModalScreen):
             or isinstance(from_ts, NoSelection)
         ):
             return
-        diff_settings = SETTINGS.get().diff
-        if diff_settings.mode == "command-based":
-            from_data = (
-                await make_api_request(
-                    self.app, route=f"/api/v1/watch/{self.uuid}/history/{from_ts}"
-                )
-            ).text
-            to_data = (
-                await make_api_request(
-                    self.app, route=f"/api/v1/watch/{self.uuid}/history/{to_ts}"
-                )
-            ).text
-            self._run_command_based_diff(
-                from_data=from_data,
-                to_data=to_data,
-                from_ts=from_ts,
-                to_ts=to_ts,
-            )
-        else:
-            await self._run_internal_diff(from_ts=from_ts, to_ts=to_ts)
-        _ = self.app.pop_screen()
-
-    def _run_command_based_diff(
-        self,
-        from_data: str,
-        to_data: str,
-        from_ts: int,
-        to_ts: int,
-    ) -> None:
-        with TemporaryDirectory() as tmpdir:
-            from_filename = self._filename_for_diff(self.api_watch, from_ts)
-            to_filename = self._filename_for_diff(self.api_watch, to_ts)
-            from_filepath = path.join(tmpdir, from_filename)
-            to_filepath = path.join(tmpdir, to_filename)
-
-            with open(from_filepath, "w", encoding="utf-8") as from_file:
-                from_file.write(from_data)
-            with open(to_filepath, "w", encoding="utf-8") as to_file:
-                to_file.write(to_data)
-
-            with self.app.suspend():
-                cmd = self._expand_command_based_diff_template(
-                    from_filepath=from_filepath,
-                    to_filepath=to_filepath,
-                )
-                _ = subprocess.run(cmd, shell=True, check=True)
-
-    def _expand_command_based_diff_template(
-        self, from_filepath: str, to_filepath: str
-    ) -> str:
-        settings = SETTINGS.get()
-        template = settings.diff.command_template
-        tokens = {
-            "{ICDIFF}": shlex.quote(self._get_path_for("icdiff")),
-            "{FILE_FROM}": shlex.quote(from_filepath),
-            "{FILE_TO}": shlex.quote(to_filepath),
-        }
-        expanded_command = template
-        for token, value in tokens.items():
-            expanded_command = expanded_command.replace(token, value)
-        return expanded_command
-
-    async def _run_internal_diff(self, from_ts: int, to_ts: int) -> None:
-        settings = SETTINGS.get().diff
-        params: dict[str, str] = {
-            "format": settings.internal_format,
-            "word_diff": self._bool_to_api_string(settings.internal_word_diff),
-            "no_markup": self._bool_to_api_string(settings.internal_no_markup),
-            "type": settings.internal_type,
-            "changesOnly": self._bool_to_api_string(settings.internal_changes_only),
-            "ignoreWhitespace": self._bool_to_api_string(
-                settings.internal_ignore_whitespace
-            ),
-            "removed": self._bool_to_api_string(settings.internal_removed),
-            "added": self._bool_to_api_string(settings.internal_added),
-            "replaced": self._bool_to_api_string(settings.internal_replaced),
-        }
-        internal_diff = (
-            await make_api_request(
-                self.app,
-                route=f"/api/v1/watch/{self.uuid}/difference/{from_ts}/{to_ts}",
-                params=params,
-            )
-        ).text
-        with TemporaryDirectory() as tmpdir:
-            internal_diff_filepath = path.join(
-                tmpdir,
-                self._filename_for_internal_diff(self.api_watch, from_ts, to_ts),
-            )
-            with open(internal_diff_filepath, "w", encoding="utf-8") as output_file:
-                output_file.write(internal_diff)
-            with self.app.suspend():
-                _ = subprocess.run(
-                    [
-                        "less",
-                        "--RAW-CONTROL-CHARS",
-                        "-+S",
-                        "--wordwrap",
-                        internal_diff_filepath,
-                    ],
-                    check=True,
-                )
-
-    def _filename_for_internal_diff(
-        self, watch: ApiListWatch, from_timestamp: int, to_timestamp: int
-    ) -> str:
-        return sanitize_filename(
-            f"{watch.title_or_url()}_internal_diff_{format_timestamp(from_timestamp)}_to_{format_timestamp(to_timestamp)}.txt",
-            replacement_text="_",
+        await execute_diff(
+            app=self.app,
+            watch=self.api_watch,
+            uuid=self.uuid,
+            from_ts=from_ts,
+            to_ts=to_ts,
         )
-
-    def _bool_to_api_string(self, value: bool) -> str:
-        return value and "true" or "false"
+        _ = self.app.pop_screen()
 
     @work(exclusive=True)
     async def load_data(self, uuid: str) -> tuple[list[int], int, ApiWatch]:
@@ -229,29 +280,3 @@ class DiffPanelScreen(ModalScreen):
         select_to.value = snapshot_timestamps[0]
 
         self.api_watch = worker.result[2]
-
-    def _get_path_for(self, cmd: str) -> str:
-        """Get the path to the cmd in the current Python environment."""
-        cmd_path = shutil.which(cmd)
-        if cmd_path:
-            return cmd_path
-
-        # Fallback: try to find it in the same directory as the Python executable
-        python_dir = path.dirname(sys.executable)
-        fallback_path = path.join(python_dir, cmd)
-        if path.exists(fallback_path):
-            return fallback_path
-
-        # Another fallback: try common bin directories
-        for bin_dir in ["bin", "Scripts"]:
-            fallback_path = path.join(path.dirname(python_dir), bin_dir, cmd)
-            if path.exists(fallback_path):
-                return fallback_path
-
-        raise RuntimeError(f"{cmd} binary not found.")
-
-    def _filename_for_diff(self, watch: ApiListWatch, timestamp: int) -> str:
-        return sanitize_filename(
-            f"{watch.title_or_url()}_{format_timestamp(timestamp)}",
-            replacement_text="_",
-        )
