@@ -71,6 +71,8 @@ jobs:
           uv run coverage report -m
           uv run coverage xml -o coverage.xml
 
+      - run: sleep 22
+
       # - name: Upload coverage artifact
       #   uses: actions/upload-artifact@v4
       #   with:
