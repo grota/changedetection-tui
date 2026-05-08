@@ -7,8 +7,9 @@ version: 2
 updates:
   - package-ecosystem: "uv" # See documentation for possible values
     allow:
-      - update-types: "version-update:semver-minor"
-      - update-types: "version-update:semver-patch"
+      - update-types:
+        - "version-update:semver-minor"
+        - "version-update:semver-patch"
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
